@@ -78,6 +78,17 @@ DrawTetrisBlock(GraphicsInfo * GameGraphicsInfo, Block BlockInfo)
 	}
 }
 
+Block
+GetRandomBlock(GameState* GameStatus)
+{
+	Block TestBlock = {};
+	TestBlock.Color = Green;
+	TestBlock.Type = 4;
+	TestBlock.GridX = 0;
+	TestBlock.GridY = 0;
+	return TestBlock;
+}
+
 bool
 BlockCanMove(GameState* GameStatus, Block BlockInfo)
 {
@@ -95,18 +106,38 @@ BlockCanMove(GameState* GameStatus, Block BlockInfo)
 				{
 					return false;
 				}
+				if (GameStatus->Grid[RealX][RealY] != 0xFF000000)
+				{
+					return false;
+				}
+			}
+			hbit >>= 1;
+		}
+	}
+	return true;
+}
+
+//add error checking
+void 
+DropBlock(GameState* GameStatus) 
+{ 
+	uint16_t bits = BlockTypes[GameStatus->CurrentBlock.Type];
+	uint16_t hbit = 1 << (16 - 1);
+	for (int BlockX = 0; BlockX < 4; BlockX++)
+	{
+		for (int BlockY = 0; BlockY < 4; BlockY++)
+		{
+			if (bits & hbit)
+			{
+				int32_t RealX = GameStatus->CurrentBlock.GridX + BlockY;
+				int32_t RealY = GameStatus->CurrentBlock.GridY + BlockX;
+				GameStatus->Grid[RealX][RealY] = GameStatus->CurrentBlock.Color;
 			}
 			hbit >>= 1;
 		}
 	}
 
-	return true;
-}
-
-void 
-DropBlock(GameState* GameStatus) 
-{ 
-
+	GameStatus->CurrentBlock = GetRandomBlock(GameStatus);
 }
 
 void
@@ -142,25 +173,22 @@ DrawEntireTetrisGrid(GraphicsInfo* GameGraphicsInfo, GameState * GameState)
 	DrawTetrisGrid(GameGraphicsInfo, GameState, 216, 31);
 }
 
-void
-GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameState)
-{
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF121212, 0, 0, GameGraphicsInfo->Width - 1, GameGraphicsInfo->Height - 1);
-	DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
 
+void
+GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
+{
 	for (int GridX = 0; GridX < TileCountX; GridX++)
 	{
-		for (int GridY = 0; GridY < TileCountX; GridY++)
+		for (int GridY = 0; GridY < TileCountY; GridY++)
 		{
-			GameState->Grid[GridX][GridY] = 0xFF000000;
+			GameStatus->Grid[GridX][GridY] = 0xFF000000;
 		}
 	}
 
-	GameState->CurrentBlock = {};
-	GameState->CurrentBlock.Color = LightBlue;
-	GameState->CurrentBlock.Type = 4;
-	GameState->CurrentBlock.GridX = 3;
-	GameState->CurrentBlock.GridY = 5;
+	DrawCoordinateBox(GameGraphicsInfo, 0xFF121212, 0, 0, GameGraphicsInfo->Width - 1, GameGraphicsInfo->Height - 1);
+	DrawEntireTetrisGrid(GameGraphicsInfo, GameStatus);
+
+	GameStatus->CurrentBlock = GetRandomBlock(GameStatus);
 }
 
 void

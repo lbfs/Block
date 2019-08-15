@@ -45,6 +45,10 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		{
 			MoveBlock(&GameStatus, 1, 0);
 		}
+		else if (VKCode == VK_SPACE)
+		{
+			DropBlock(&GameStatus);
+		}
 	}break;
 	case WM_TIMER:
 	{

@@ -15,13 +15,13 @@ enum BlockColor : uint32_t { LightBlue = 0xFF00F0EF, DarkBlue = 0x0000EE, Orange
 enum BlockRotation { Top = 0, Right = 1, Bottom = 2, Left = 3 };
 
 
-const uint16_t BlockTypes[28] = {  3840,  8738,   240, 17476,   // I-Tetrimino 
-								  36352, 25664,  3616, 17600,   // J-Tetrimino 
-								  11776, 17504,  3712, 50240,   // L-Tetrimino 
-								  26112, 26112, 26112, 26112,   // O-Tetrimino 
-								  27648, 17952,  1728, 35904,   // S-Tetrimino 
-								  19968, 17984,  3648, 19520,   // T-Tetrimino 
-								  50688,  9792,  3168, 19584 }; // Z-Tetrimino
+const uint16_t BlockTypes[28] = {  3840,  8738,   240, 17476,   // I-Tetrimino 0
+								  36352, 25664,  3616, 17600,   // J-Tetrimino 4
+								  11776, 17504,  3712, 50240,   // L-Tetrimino 8
+								  26112, 26112, 26112, 26112,   // O-Tetrimino 12
+								  27648, 17952,  1728, 35904,   // S-Tetrimino 16
+								  19968, 17984,  3648, 19520,   // T-Tetrimino 20
+								  50688,  9792,  3168, 19584 }; // Z-Tetrimino 24
 
 struct Block
 {
