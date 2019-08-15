@@ -21,6 +21,8 @@ const uint16_t BlockTypes[28] = {  3840,  8738,   240, 17476,   // I-Block 0
 
 const uint32_t BlockColors[7] = { 0xFF00FFFF , 0xFF0000FF , 0xFFFFAA00 , 0xFFFFFF00 , 0xFF00FF00, 0xFF9900FF, 0xFFFF0000 };
 
+enum GameActivity { Initalized = 0, Playing = 1, Finished = 2 };
+
 struct Block
 {
 	uint16_t Type;
@@ -36,6 +38,7 @@ struct GameState
 	uint32_t Grid[TileCountX][TileCountY];
 	Block CurrentBlock;
 	uint32_t RandomNumber;
+	GameActivity Status;
 };
 
 struct GraphicsInfo
@@ -45,7 +48,7 @@ struct GraphicsInfo
 	uint32_t Height;
 };
 
-void MoveBlock(GameState* GameState, int32_t x, int32_t y);
+bool MoveBlock(GameState* GameState, int32_t x, int32_t y);
 void RapidDropBlock(GameState* GameStatus);
 void RotateBlock(GameState* GameStatus);
 

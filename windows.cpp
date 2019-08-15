@@ -127,7 +127,6 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	if (SetTimer(hWnd, ID_TIMER, 1000, NULL) == 0)
 		MessageBoxW(hWnd, L"Could not SetTimer()!", L"Error", MB_OK | MB_ICONEXCLAMATION);
 
-
 	// Main event loop
 	MSG msg;
 	while (GetMessageW(&msg, hWnd, 0, 0) && GameLoop)

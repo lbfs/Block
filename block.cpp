@@ -110,7 +110,7 @@ BlockCanMove(GameState* GameStatus, Block BlockInfo)
 				}
 				if (GameStatus->Grid[RealX][RealY] != 0xFF000000)
 				{
-					return false;
+ 					return false;
 				}
 			}
 			hbit >>= 1;
@@ -139,20 +139,44 @@ DropBlock(GameState* GameStatus)
 		}
 	}
 
-	GameStatus->CurrentBlock = GetRandomBlock(GameStatus);
+	Block NewBlock = GetRandomBlock(GameStatus);
+	if (!BlockCanMove(GameStatus, NewBlock))
+	{
+		GameStatus->Status = Finished;
+	}
+	else
+	{
+		GameStatus->CurrentBlock = NewBlock;
+	}
+}
+
+bool
+MoveBlock(GameState* GameStatus, int32_t x, int32_t y)
+{
+	Block TestBlock = GameStatus->CurrentBlock;
+	TestBlock.GridX += x;
+	TestBlock.GridY += y;
+	if (BlockCanMove(GameStatus, TestBlock))
+	{
+		GameStatus->CurrentBlock = TestBlock;
+		return true;
+	}
+	else
+	{
+		if (x == 0 && y == 1)
+		{
+			DropBlock(GameStatus);
+		}
+	}
+	return false;
 }
 
 void 
 RapidDropBlock(GameState* GameStatus)
 {
-	Block TestBlock = GameStatus->CurrentBlock;
-	while (BlockCanMove(GameStatus, TestBlock))
+	while (MoveBlock(GameStatus, 0, 1))
 	{
-		TestBlock.GridY++;
 	}
-	GameStatus->CurrentBlock.GridY = (TestBlock.GridY - 1);
-
-	DropBlock(GameStatus);
 }
 
 void
@@ -167,17 +191,6 @@ RotateBlock(GameState* GameStatus)
 	}
 }
 
-void
-MoveBlock(GameState* GameStatus, int32_t x, int32_t y)
-{
-	Block TestBlock = GameStatus->CurrentBlock;
-	TestBlock.GridX += x;
-	TestBlock.GridY += y;
-	if (BlockCanMove(GameStatus, TestBlock))
-	{
-		GameStatus->CurrentBlock = TestBlock;
-	}
-}
 
 void 
 DrawEntireTetrisGrid(GraphicsInfo* GameGraphicsInfo, GameState * GameState)
@@ -186,7 +199,6 @@ DrawEntireTetrisGrid(GraphicsInfo* GameGraphicsInfo, GameState * GameState)
 	DrawCoordinateBox(GameGraphicsInfo, 0xFF000000, 216, 31, 425, 450);
 	DrawTetrisGrid(GameGraphicsInfo, GameState, 216, 31);
 }
-
 
 void
 GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
@@ -203,11 +215,21 @@ GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
 	DrawEntireTetrisGrid(GameGraphicsInfo, GameStatus);
 
 	GameStatus->CurrentBlock = GetRandomBlock(GameStatus);
+	GameStatus->Status = Playing;
 }
 
 void
 GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState)
 {
-	DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
-	DrawTetrisBlock(GameGraphicsInfo, GameState->CurrentBlock);
+	if (GameState->Status == Playing)
+	{
+		DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
+		DrawTetrisBlock(GameGraphicsInfo, GameState->CurrentBlock);
+	}
+	if (GameState->Status == Finished) // One more draw to see the move the block before attempted placement...
+	{
+		DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
+		DrawTetrisBlock(GameGraphicsInfo, GameState->CurrentBlock);
+		GameState->Status = Initalized;
+	}
 }
