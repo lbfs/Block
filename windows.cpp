@@ -1,10 +1,60 @@
 #include "block.h"
 #include <windows.h>
+#include <time.h>
+
+GameState GameStatus = {};
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-	return DefWindowProcW(hWnd, uMsg, wParam, lParam);;
+	LRESULT Result = 0;
+	switch (uMsg)
+	{
+	case WM_KEYDOWN:
+	{
+		WPARAM VKCode = wParam;
+		if (VKCode == 'W') // FUTURE: Put these on message queue
+		{
+			RotateBlock(&GameStatus, Top);
+			//MoveBlock(&GameStatus, 0, -1);
+		}
+		else if (VKCode == 'S')
+		{
+			RotateBlock(&GameStatus, Left);
+			//MoveBlock(&GameStatus, 0, 1);
+		}
+		else if (VKCode == 'A')
+		{
+			RotateBlock(&GameStatus, Bottom);
+			//MoveBlock(&GameStatus, -1, 0);
+		}
+		else if (VKCode == 'D')
+		{
+			RotateBlock(&GameStatus, Right);
+			//MoveBlock(&GameStatus, 1, 0);
+		}
+		else if (VKCode == 'J')
+		{
+			MoveBlock(&GameStatus, 0, 1);
+		}
+		else if (VKCode == 'K')
+		{
+			MoveBlock(&GameStatus, -1, 0);
+		}
+		else if (VKCode == 'L')
+		{
+			MoveBlock(&GameStatus, 1, 0);
+		}
+	}break;
+	case WM_TIMER:
+	{
+		MoveBlock(&GameStatus, 0, 1);
+	} break;
+	default:
+		Result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	}
+
+	return Result;
 }
 
 int WINAPI
@@ -75,7 +125,9 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	GameGraphicsInfo.Height = GameWindowHeight;
 
 	// Init Game
-	GameInitialize(&GameGraphicsInfo);
+	srand(time(NULL));
+	GameStatus.RandomNumber = rand() % 28;
+	GameInitialize(&GameGraphicsInfo, &GameStatus);
 
 	const int ID_TIMER = 1;
 	if (SetTimer(hWnd, ID_TIMER, 1000, NULL) == 0)
@@ -90,7 +142,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		DispatchMessageW(&msg);
 
 		// Game Render Here
-		GameUpdate(&GameGraphicsInfo);
+		GameUpdate(&GameGraphicsInfo, &GameStatus);
 
 		HDC hdc = GetDC(hWnd);
 		StretchDIBits(hdc,

@@ -40,33 +40,132 @@ DrawGrid(GraphicsInfo * GameGraphicsInfo, uint32_t GridColor, int StartX, int St
 }
 
 void
-DrawTetrisGrid(GraphicsInfo * GameGraphicsInfo, uint32_t GridColor, int StartX, int StartY)
+DrawTetrisGrid(GraphicsInfo * GameGraphicsInfo, GameState * GameStatus, int32_t StartX, int32_t StartY)
 {
-	for (int GridXCount = 0; GridXCount < TileCountX; GridXCount++)
+	for (int GridX = 0; GridX < TileCountX; GridX++)
 	{
-		for (int GridYCount = 0; GridYCount < TileCountY; GridYCount++)
+		for (int GridY = 0; GridY < TileCountY; GridY++)
 		{
-			uint32_t ElementStartX = StartX + (GridXCount * TileRenderSize);
-			uint32_t ElementStartY = StartY + (GridYCount * TileRenderSize);
-			uint32_t ElementEndX = ElementStartX + TileRenderSize - 1;
-			uint32_t ElementEndY = ElementStartY + TileRenderSize - 1;
-			DrawCoordinateBox(GameGraphicsInfo, 0xFF000000, ElementStartX, ElementStartY, ElementEndX, ElementEndY);
+			int32_t ElementStartX = StartX + (GridX * TileRenderSize);
+			int32_t ElementStartY = StartY + (GridY * TileRenderSize);
+			int32_t ElementEndX = ElementStartX + TileRenderSize - 1;
+			int32_t ElementEndY = ElementStartY + TileRenderSize - 1;
+			DrawCoordinateBox(GameGraphicsInfo, GameStatus->Grid[GridX][GridY], ElementStartX, ElementStartY, ElementEndX, ElementEndY);
 		}
 	}
-	DrawGrid(GameGraphicsInfo, GridColor, StartX, StartY);
+	DrawGrid(GameGraphicsInfo, TileBorderColor, StartX, StartY);
 }
 
+void
+DrawTetrisBlock(GraphicsInfo * GameGraphicsInfo, Block BlockInfo)
+{
+	uint16_t bits = BlockTypes[BlockInfo.Type];
+	uint16_t hbit = 1 << (16 - 1);
+	for (int BlockX = 0; BlockX < 4; BlockX++)
+	{
+		for (int BlockY = 0; BlockY < 4; BlockY++)
+		{
+			if (bits & hbit)
+			{
+				int32_t ElementStartX = (BlockInfo.GridX * TileRenderSize) + (BlockY * TileRenderSize) + 216; // possible bug? // move 216, 31 elsewhere
+				int32_t ElementStartY = (BlockInfo.GridY * TileRenderSize) + (BlockX * TileRenderSize) + 31;
+				int32_t ElementEndX = ElementStartX + TileRenderSize - 1;
+				int32_t ElementEndY = ElementStartY + TileRenderSize - 1;
+				DrawCoordinateBox(GameGraphicsInfo, BlockInfo.Color, ElementStartX, ElementStartY, ElementEndX, ElementEndY);
+			}
+			hbit >>= 1;
+		}
+	}
+}
+
+bool
+BlockCanMove(GameState* GameStatus, Block BlockInfo)
+{
+	uint16_t bits = BlockTypes[BlockInfo.Type];
+	uint16_t hbit = 1 << (16 - 1);
+	for (int BlockX = 0; BlockX < 4; BlockX++)
+	{
+		for (int BlockY = 0; BlockY < 4; BlockY++)
+		{
+			if (bits & hbit)
+			{
+				int32_t RealX = BlockInfo.GridX + BlockY;
+				int32_t RealY = BlockInfo.GridY + BlockX;
+				if (RealX >= TileCountX || RealX < 0 || RealY >= TileCountY || RealY < 0)
+				{
+					return false;
+				}
+			}
+			hbit >>= 1;
+		}
+	}
+
+	return true;
+}
+
+void 
+DropBlock(GameState* GameStatus) 
+{ 
+
+}
 
 void
-GameInitialize(GraphicsInfo * GameGraphicsInfo)
+RotateBlock(GameState* GameStatus, BlockRotation Rotation)
+{
+	Block TestBlock = GameStatus->CurrentBlock;
+	uint16_t NextRotation = (uint16_t)Rotation;
+	TestBlock.Type = ((uint16_t)GameStatus->CurrentBlock.Type - (uint16_t)GameStatus->CurrentBlock.Rotation) + NextRotation;
+	TestBlock.Rotation = (BlockRotation)NextRotation;
+	if (BlockCanMove(GameStatus, TestBlock))
+	{
+		GameStatus->CurrentBlock = TestBlock;
+	}
+}
+
+void
+MoveBlock(GameState* GameStatus, int32_t x, int32_t y)
+{
+	Block TestBlock = GameStatus->CurrentBlock;
+	TestBlock.GridX += x;
+	TestBlock.GridY += y;
+	if (BlockCanMove(GameStatus, TestBlock))
+	{
+		GameStatus->CurrentBlock = TestBlock;
+	}
+}
+
+void 
+DrawEntireTetrisGrid(GraphicsInfo* GameGraphicsInfo, GameState * GameState)
 {
 	DrawCoordinateBox(GameGraphicsInfo, 0xFF9E351A, 215, 30, 426, 451); // Replace with box outline
 	DrawCoordinateBox(GameGraphicsInfo, 0xFF000000, 216, 31, 425, 450);
-	DrawTetrisGrid(GameGraphicsInfo, 0xFF212121, 216, 31);
+	DrawTetrisGrid(GameGraphicsInfo, GameState, 216, 31);
 }
 
 void
-GameUpdate(GraphicsInfo * GameGraphicsInfo)
+GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameState)
 {
+	DrawCoordinateBox(GameGraphicsInfo, 0xFF121212, 0, 0, GameGraphicsInfo->Width - 1, GameGraphicsInfo->Height - 1);
+	DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
 
+	for (int GridX = 0; GridX < TileCountX; GridX++)
+	{
+		for (int GridY = 0; GridY < TileCountX; GridY++)
+		{
+			GameState->Grid[GridX][GridY] = 0xFF000000;
+		}
+	}
+
+	GameState->CurrentBlock = {};
+	GameState->CurrentBlock.Color = LightBlue;
+	GameState->CurrentBlock.Type = 4;
+	GameState->CurrentBlock.GridX = 3;
+	GameState->CurrentBlock.GridY = 5;
+}
+
+void
+GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState)
+{
+	DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
+	DrawTetrisBlock(GameGraphicsInfo, GameState->CurrentBlock);
 }

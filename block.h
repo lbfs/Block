@@ -9,29 +9,36 @@
 #define TileRenderSize 21
 #define TileCountX 10
 #define TileCountY 20
+#define TileBorderColor 0xFF212121
 
-// I-Tetrimino // 0000 1111 0000 0000 | 0010 0010 0010 0010 | 0000 0000 1111 0000 | 0100 0100 0100 0100 
-// J-Tetrimino // 1000 1110 0000 0000 | 0110 0100 0100 0000 | 0000 1110 0010 0000 | 0100 0100 1100 0000
-// L-Tetrimino // 0010 1110 0000 0000 | 0100 0100 0110 0000 | 0000 1110 1000 0000 | 1100 0100 0100 0000
-// O-Tetrimino // 0110 0110 0000 0000 | Repeat 3 times
-// S-Tetrimino // 0110 1100 0000 0000 | 0100 0110 0010 0000 | 0000 0110 1100 0000 | 1000 1100 0100 0000
-// T-Tetrimino // 0100 1110 0000 0000 | 0100 0110 0100 0000 | 0000 1110 0100 0000 | 0100 1100 0100 0000
-// Z-Tetrimino // 1100 0110 0000 0000 | 0010 0110 0100 0000 | 0000 1100 0110 0000 | 0100 1100 1000 0000
-
-/*
-enum BlockType : uint16_t {};
-enum BlockRotation : uint8_t { Top = 0, Left = 1, Bottom = 2, Right = 3 };
 enum BlockColor : uint32_t { LightBlue = 0xFF00F0EF, DarkBlue = 0x0000EE, Orange = 0xFFEF9F00, Yellow = 0xFFEFF000, Green = 0xFF00EF00, Purple = 0xFF9F00F0, Red = 0xFF9F00F0 };
+enum BlockRotation { Top = 0, Right = 1, Bottom = 2, Left = 3 };
+
+
+const uint16_t BlockTypes[28] = {  3840,  8738,   240, 17476,   // I-Tetrimino 
+								  36352, 25664,  3616, 17600,   // J-Tetrimino 
+								  11776, 17504,  3712, 50240,   // L-Tetrimino 
+								  26112, 26112, 26112, 26112,   // O-Tetrimino 
+								  27648, 17952,  1728, 35904,   // S-Tetrimino 
+								  19968, 17984,  3648, 19520,   // T-Tetrimino 
+								  50688,  9792,  3168, 19584 }; // Z-Tetrimino
 
 struct Block
 {
-	BlockType Type;
-	BlockRotation Rotation;
+	uint16_t Type;
+	uint16_t Rotation;
 	BlockColor Color;
-	uint32_t GridX;
-	uint32_t GridY;
+	int32_t GridX;
+	int32_t GridY;
 };
-*/
+
+
+struct GameState
+{
+	uint32_t Grid[TileCountX][TileCountY];
+	Block CurrentBlock;
+	uint32_t RandomNumber;
+};
 
 struct GraphicsInfo
 {
@@ -40,7 +47,12 @@ struct GraphicsInfo
 	uint32_t Height;
 };
 
-void GameInitialize(GraphicsInfo* GameGraphicsInfo);
-void GameUpdate(GraphicsInfo* GameGraphicsInfo);
+void MoveBlock(GameState* GameState, int32_t x, int32_t y);
+void DropBlock(GameState* GameStatus);
+void RotateBlock(GameState* GameStatus, BlockRotation Rotation);
+
+void GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameState);
+void GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState);
+
 
 #endif
