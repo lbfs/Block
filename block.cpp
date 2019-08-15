@@ -81,12 +81,14 @@ DrawTetrisBlock(GraphicsInfo * GameGraphicsInfo, Block BlockInfo)
 Block
 GetRandomBlock(GameState* GameStatus)
 {
-	Block TestBlock = {};
-	TestBlock.Color = Green;
-	TestBlock.Type = 4;
-	TestBlock.GridX = 0;
-	TestBlock.GridY = 0;
-	return TestBlock;
+	Block BlockInfo = {};
+	BlockInfo.Rotation = GameStatus->RandomNumber % 4;
+	BlockInfo.Type = ((GameStatus->RandomNumber % 7) * 4) + BlockInfo.Rotation;
+	BlockInfo.Color = BlockColors[(GameStatus->RandomNumber % 7)];
+	BlockInfo.GridX = 3;
+	BlockInfo.GridY = 0;
+  	GameStatus->RandomNumber++;
+	return BlockInfo;
 }
 
 bool
@@ -140,13 +142,25 @@ DropBlock(GameState* GameStatus)
 	GameStatus->CurrentBlock = GetRandomBlock(GameStatus);
 }
 
-void
-RotateBlock(GameState* GameStatus, BlockRotation Rotation)
+void 
+RapidDropBlock(GameState* GameStatus)
 {
 	Block TestBlock = GameStatus->CurrentBlock;
-	uint16_t NextRotation = (uint16_t)Rotation;
-	TestBlock.Type = ((uint16_t)GameStatus->CurrentBlock.Type - (uint16_t)GameStatus->CurrentBlock.Rotation) + NextRotation;
-	TestBlock.Rotation = (BlockRotation)NextRotation;
+	while (BlockCanMove(GameStatus, TestBlock))
+	{
+		TestBlock.GridY++;
+	}
+	GameStatus->CurrentBlock.GridY = (TestBlock.GridY - 1);
+
+	DropBlock(GameStatus);
+}
+
+void
+RotateBlock(GameState* GameStatus)
+{
+	Block TestBlock = GameStatus->CurrentBlock;
+	TestBlock.Rotation = ((GameStatus->CurrentBlock.Rotation + 1) % 4);
+	TestBlock.Type = (GameStatus->CurrentBlock.Type - GameStatus->CurrentBlock.Rotation) + TestBlock.Rotation;
 	if (BlockCanMove(GameStatus, TestBlock))
 	{
 		GameStatus->CurrentBlock = TestBlock;

@@ -3,6 +3,7 @@
 #include <time.h>
 
 GameState GameStatus = {};
+static bool GameLoop = true;
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -13,46 +14,35 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 	case WM_KEYDOWN:
 	{
 		WPARAM VKCode = wParam;
-		if (VKCode == 'W') // FUTURE: Put these on message queue
-		{
-			RotateBlock(&GameStatus, Top);
-			//MoveBlock(&GameStatus, 0, -1);
-		}
-		else if (VKCode == 'S')
-		{
-			RotateBlock(&GameStatus, Left);
-			//MoveBlock(&GameStatus, 0, 1);
-		}
-		else if (VKCode == 'A')
-		{
-			RotateBlock(&GameStatus, Bottom);
-			//MoveBlock(&GameStatus, -1, 0);
-		}
-		else if (VKCode == 'D')
-		{
-			RotateBlock(&GameStatus, Right);
-			//MoveBlock(&GameStatus, 1, 0);
-		}
-		else if (VKCode == 'J')
+		if (VKCode == 'S')
 		{
 			MoveBlock(&GameStatus, 0, 1);
 		}
-		else if (VKCode == 'K')
+		else if (VKCode == 'A')
 		{
 			MoveBlock(&GameStatus, -1, 0);
 		}
-		else if (VKCode == 'L')
+		else if (VKCode == 'D')
 		{
 			MoveBlock(&GameStatus, 1, 0);
 		}
+		else if (VKCode == 'J')
+		{
+			RotateBlock(&GameStatus);
+		}
 		else if (VKCode == VK_SPACE)
 		{
-			DropBlock(&GameStatus);
+			RapidDropBlock(&GameStatus);
 		}
 	}break;
 	case WM_TIMER:
 	{
 		MoveBlock(&GameStatus, 0, 1);
+	} break;
+	case WM_CLOSE:
+	{
+		GameLoop = false;
+		// GameShutdown();
 	} break;
 	default:
 		Result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -140,7 +130,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 
 	// Main event loop
 	MSG msg;
-	while (GetMessageW(&msg, hWnd, 0, 0))
+	while (GetMessageW(&msg, hWnd, 0, 0) && GameLoop)
 	{
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
@@ -159,7 +149,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		);
 		ReleaseDC(hWnd, hdc);
 	}
-
+	
 	// Cleanup Timer
 	KillTimer(hWnd, ID_TIMER);
 
