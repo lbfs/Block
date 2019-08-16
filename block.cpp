@@ -1,13 +1,20 @@
 #include "block.h"
 
+#if _DEBUG
+#include <windows.h>
+#endif
+
+// TODO: Scoring System, Show Next Block, Properly Start Blocks at Correct Position (I.E. Not from "0,0" of the Block)
+// But rather 0,0 of the first hit block.
+
 void
 DrawCoordinateBox(GraphicsInfo* GameGraphicsInfo, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY)
 {
 	uint32_t* Pixel = (uint32_t*)GameGraphicsInfo->BitmapMemory;
 	Pixel += (StartX + GameGraphicsInfo->Width * StartY);
-	for (int Y = 0; Y <= EndY - StartY; ++Y)
+	for (int Y = EndY - StartY; Y > 0; --Y )
 	{
-		for (int X = 0; X <= EndX - StartX; ++X)
+		for (int X = EndX - StartX; X > 0; --X)
 		{
 			*(Pixel + X) = HexColor;
 		}
@@ -16,220 +23,257 @@ DrawCoordinateBox(GraphicsInfo* GameGraphicsInfo, uint32_t HexColor, int StartX,
 }
 
 void
-DrawGrid(GraphicsInfo * GameGraphicsInfo, uint32_t GridColor, int StartX, int StartY)
+DrawBoard(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
 {
-	uint32_t GridWidth = (StartX + (TileCountX * TileRenderSize)) - StartX;
-	uint32_t GridHeight = (StartY + (TileCountY * TileRenderSize)) - StartY;
-
-	uint32_t* Row = (uint32_t*)GameGraphicsInfo->BitmapMemory;
-	Row += (StartX + GameGraphicsInfo->Width * StartY);
-
-	for (uint32_t RowIndex = 0; RowIndex < GridHeight; RowIndex++)
+	uint16_t Type = GameStatus->CurrentBlock.Structure;
+	uint16_t HighBit = 1 << (16 - 1);
+	for (uint32_t Row = 0; Row < TileRowCount; Row++)
 	{
-		uint32_t* Pixel = Row;
-		for (uint32_t ColumnIndex = 0; ColumnIndex < GridWidth; ColumnIndex++)
+		for (uint32_t Column = 0; Column < TileColumnCount; Column++)
 		{
-			if ((RowIndex % TileRenderSize == 0 && RowIndex != 0) || (ColumnIndex % TileRenderSize == 0 && ColumnIndex != 0))
-			{
-				*Pixel = GridColor;
-			}
-			Pixel++;
+			uint32_t StartX = Column * TileRenderSize;
+			uint32_t StartY = Row * TileRenderSize;
+			int32_t EndX = StartX + TileRenderSize - 1;
+			int32_t EndY = StartY + TileRenderSize - 1;
+			DrawCoordinateBox(GameGraphicsInfo, GameStatus->Board[Row][Column], StartX, StartY, EndX, EndY);
 		}
-		Row += GameGraphicsInfo->Width;
 	}
 }
 
 void
-DrawTetrisGrid(GraphicsInfo * GameGraphicsInfo, GameState * GameStatus, int32_t StartX, int32_t StartY)
+DrawBlock(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
 {
-	for (int GridX = 0; GridX < TileCountX; GridX++)
+	uint16_t Type = GameStatus->CurrentBlock.Structure;
+	uint16_t HighBit = 1 << (16 - 1);
+	for (uint32_t Row = 0; Row < 4; Row++)
 	{
-		for (int GridY = 0; GridY < TileCountY; GridY++)
+		for (uint32_t Column = 0; Column < 4; Column++)
 		{
-			int32_t ElementStartX = StartX + (GridX * TileRenderSize);
-			int32_t ElementStartY = StartY + (GridY * TileRenderSize);
-			int32_t ElementEndX = ElementStartX + TileRenderSize - 1;
-			int32_t ElementEndY = ElementStartY + TileRenderSize - 1;
-			DrawCoordinateBox(GameGraphicsInfo, GameStatus->Grid[GridX][GridY], ElementStartX, ElementStartY, ElementEndX, ElementEndY);
-		}
-	}
-	DrawGrid(GameGraphicsInfo, TileBorderColor, StartX, StartY);
-}
-
-void
-DrawTetrisBlock(GraphicsInfo * GameGraphicsInfo, Block BlockInfo)
-{
-	uint16_t bits = BlockTypes[BlockInfo.Type];
-	uint16_t hbit = 1 << (16 - 1);
-	for (int BlockX = 0; BlockX < 4; BlockX++)
-	{
-		for (int BlockY = 0; BlockY < 4; BlockY++)
-		{
-			if (bits & hbit)
+			if (Type & HighBit)
 			{
-				int32_t ElementStartX = (BlockInfo.GridX * TileRenderSize) + (BlockY * TileRenderSize) + 216; // possible bug? // move 216, 31 elsewhere
-				int32_t ElementStartY = (BlockInfo.GridY * TileRenderSize) + (BlockX * TileRenderSize) + 31;
-				int32_t ElementEndX = ElementStartX + TileRenderSize - 1;
-				int32_t ElementEndY = ElementStartY + TileRenderSize - 1;
-				DrawCoordinateBox(GameGraphicsInfo, BlockInfo.Color, ElementStartX, ElementStartY, ElementEndX, ElementEndY);
+				uint32_t StartX = (Column * TileRenderSize) + (GameStatus->CurrentBlock.Column * TileRenderSize);
+				uint32_t StartY = (Row * TileRenderSize) + (GameStatus->CurrentBlock.Row * TileRenderSize);
+				int32_t EndX = StartX + TileRenderSize - 1;
+				int32_t EndY = StartY + TileRenderSize - 1;
+				DrawCoordinateBox(GameGraphicsInfo, GameStatus->CurrentBlock.Color, StartX, StartY, EndX, EndY);
 			}
-			hbit >>= 1;
+			HighBit >>= 1;
 		}
 	}
-}
-
-Block
-GetRandomBlock(GameState* GameStatus)
-{
-	Block BlockInfo = {};
-	BlockInfo.Rotation = GameStatus->RandomNumber % 4;
-	BlockInfo.Type = ((GameStatus->RandomNumber % 7) * 4) + BlockInfo.Rotation;
-	BlockInfo.Color = BlockColors[(GameStatus->RandomNumber % 7)];
-	BlockInfo.GridX = 3;
-	BlockInfo.GridY = 0;
-  	GameStatus->RandomNumber++;
-	return BlockInfo;
 }
 
 bool
-BlockCanMove(GameState* GameStatus, Block BlockInfo)
+CheckBoardRow(GameState* GameStatus, uint16_t Row)
 {
-	uint16_t bits = BlockTypes[BlockInfo.Type];
-	uint16_t hbit = 1 << (16 - 1);
-	for (int BlockX = 0; BlockX < 4; BlockX++)
+	for (uint16_t Column = 0; Column < TileColumnCount; Column++)
 	{
-		for (int BlockY = 0; BlockY < 4; BlockY++)
+		if (GameStatus->Board[Row][Column] == TileBackgroundColor)
 		{
-			if (bits & hbit)
-			{
-				int32_t RealX = BlockInfo.GridX + BlockY;
-				int32_t RealY = BlockInfo.GridY + BlockX;
-				if (RealX >= TileCountX || RealX < 0 || RealY >= TileCountY || RealY < 0)
-				{
-					return false;
-				}
-				if (GameStatus->Grid[RealX][RealY] != 0xFF000000)
-				{
- 					return false;
-				}
-			}
-			hbit >>= 1;
+			return false;
 		}
 	}
 	return true;
 }
 
-//add error checking
-void 
-DropBlock(GameState* GameStatus) 
-{ 
-	uint16_t bits = BlockTypes[GameStatus->CurrentBlock.Type];
-	uint16_t hbit = 1 << (16 - 1);
-	for (int BlockX = 0; BlockX < 4; BlockX++)
+void
+CheckBoardForFullRows(GameState* GameStatus)
+{
+	// Partially filled or empty row is 0
+	// Full row is 1
+	// bool CheckBoardState[TileRowCount] = {false};
+	for (uint16_t i = 0; i < TileRowCount - 1; i++)
 	{
-		for (int BlockY = 0; BlockY < 4; BlockY++)
+		for (uint16_t j = 0; j < TileRowCount - i - 1; j++)
 		{
-			if (bits & hbit)
+			if (CheckBoardRow(GameStatus, j) < CheckBoardRow(GameStatus, j + 1))
 			{
-				int32_t RealX = GameStatus->CurrentBlock.GridX + BlockY;
-				int32_t RealY = GameStatus->CurrentBlock.GridY + BlockX;
-				GameStatus->Grid[RealX][RealY] = GameStatus->CurrentBlock.Color;
+				for (uint16_t Column = 0; Column < TileColumnCount; Column++)
+				{
+					auto temp = GameStatus->Board[j][Column];
+					GameStatus->Board[j][Column] = GameStatus->Board[j + 1][Column];
+					GameStatus->Board[j + 1][Column] = temp;
+				}
 			}
-			hbit >>= 1;
+
 		}
 	}
 
-	Block NewBlock = GetRandomBlock(GameStatus);
-	if (!BlockCanMove(GameStatus, NewBlock))
+	// iterate over board
+	for (uint16_t Row = 0; Row < TileRowCount; Row++)
 	{
-		GameStatus->Status = Finished;
-	}
-	else
-	{
-		GameStatus->CurrentBlock = NewBlock;
+		if (!CheckBoardRow(GameStatus, Row))
+			break;
+
+		for (uint16_t Column = 0; Column < TileColumnCount; Column++)
+		{
+			GameStatus->Board[Row][Column] = TileBackgroundColor;
+		}
 	}
 }
 
-bool
-MoveBlock(GameState* GameStatus, int32_t x, int32_t y)
+bool 
+CanMoveBlock(GameState* GameStatus, Block CopyBlock)
 {
-	Block TestBlock = GameStatus->CurrentBlock;
-	TestBlock.GridX += x;
-	TestBlock.GridY += y;
-	if (BlockCanMove(GameStatus, TestBlock))
+	uint16_t Type = CopyBlock.Structure;
+	uint16_t HighBit = 1 << (16 - 1);
+	for (int Row = 0; Row < 4; Row++)
 	{
-		GameStatus->CurrentBlock = TestBlock;
+		for (int Column = 0; Column < 4; Column++)
+		{
+			if (Type & HighBit)
+			{
+				int32_t RealRow = CopyBlock.Row + Row;
+				int32_t RealColumn = CopyBlock.Column + Column;
+				uint32_t CheckColor = CopyBlock.Color;
+				uint32_t BoardColor = GameStatus->Board[RealRow][RealColumn];
+
+				if (RealColumn > TileColumnCount - 1 || RealColumn < 0 || RealRow > TileRowCount - 1 || RealRow < 0)
+				{
+					return false;
+				}
+				if (BoardColor != TileBackgroundColor)
+				{
+					return false;
+				}
+			}
+			HighBit >>= 1;
+		}
+	}
+	return true;
+}
+
+Block
+RequestRandomBlock()
+{
+	Block RandomBlock = {};
+	uint16_t BlockIndex = (rand() % BlockTypeCount);
+	RandomBlock.Rotation = rand() % BlockRotationCount;
+	RandomBlock.Type = ( BlockIndex * BlockRotationCount) + RandomBlock.Rotation;
+	RandomBlock.Structure = BlockTypes[RandomBlock.Type];
+	RandomBlock.Color = BlockColors[BlockIndex];
+
+	// Assume starting position
+	RandomBlock.Row = 0;
+	RandomBlock.Column = 3;
+
+	return RandomBlock;
+}
+
+void 
+PressBlock(GameState* GameStatus)
+{
+	uint16_t Type = GameStatus->CurrentBlock.Structure;
+	uint16_t HighBit = 1 << (16 - 1);
+	for (int Row = 0; Row < 4; Row++)
+	{
+		for (int Column = 0; Column < 4; Column++)
+		{
+			if (Type & HighBit)
+			{
+				int32_t RealColumn = GameStatus->CurrentBlock.Column + Column;
+				int32_t RealRow = GameStatus->CurrentBlock.Row + Row;
+				GameStatus->Board[RealRow][RealColumn] = GameStatus->CurrentBlock.Color;
+			}
+			HighBit >>= 1;
+		}
+	}
+
+	if (GameStatus->Playing) // Move this, only here because the timer is still active.
+	{
+		CheckBoardForFullRows(GameStatus);
+		Block RandomBlock = RequestRandomBlock();
+		if (CanMoveBlock(GameStatus, RandomBlock))
+		{
+			GameStatus->CurrentBlock = RandomBlock;
+		}
+		else
+		{
+#if _DEBUG
+			OutputDebugString("Game Over!\n");
+
+#endif
+			GameStatus->Playing = false;
+		}
+	}
+}
+
+void 
+RotateBlock(GameState* GameStatus)
+{
+	Block CopyBlock = GameStatus->CurrentBlock;
+	CopyBlock.Rotation = (CopyBlock.Rotation + 1) % BlockRotationCount;
+	CopyBlock.Type = (CopyBlock.Type - GameStatus->CurrentBlock.Rotation) + CopyBlock.Rotation;
+	CopyBlock.Structure = BlockTypes[CopyBlock.Type];
+	if (CanMoveBlock(GameStatus, CopyBlock))
+	{
+		GameStatus->CurrentBlock = CopyBlock;
+	}
+}
+
+bool 
+MoveBlock(GameState* GameStatus, int16_t Row, int16_t Column)
+{
+	Block CopyBlock = GameStatus->CurrentBlock;
+	CopyBlock.Row += Row;
+	CopyBlock.Column += Column;
+	if (CanMoveBlock(GameStatus, CopyBlock))
+	{
+		GameStatus->CurrentBlock = CopyBlock;
 		return true;
 	}
 	else
-	{
-		if (x == 0 && y == 1)
+	{	
+		if (Row == 1 && Column == 0)
 		{
-			DropBlock(GameStatus);
+			PressBlock(GameStatus);
 		}
-	}
-	return false;
-}
-
-void 
-RapidDropBlock(GameState* GameStatus)
-{
-	while (MoveBlock(GameStatus, 0, 1))
-	{
+		return false;
 	}
 }
 
 void
-RotateBlock(GameState* GameStatus)
+DropBlock(GameState* GameStatus)
 {
-	Block TestBlock = GameStatus->CurrentBlock;
-	TestBlock.Rotation = ((GameStatus->CurrentBlock.Rotation + 1) % 4);
-	TestBlock.Type = (GameStatus->CurrentBlock.Type - GameStatus->CurrentBlock.Rotation) + TestBlock.Rotation;
-	if (BlockCanMove(GameStatus, TestBlock))
-	{
-		GameStatus->CurrentBlock = TestBlock;
-	}
+	while (MoveBlock(GameStatus, 1, 0)) {}
 }
-
 
 void 
-DrawEntireTetrisGrid(GraphicsInfo* GameGraphicsInfo, GameState * GameState)
-{
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF9E351A, 215, 30, 426, 451); // Replace with box outline
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF000000, 216, 31, 425, 450);
-	DrawTetrisGrid(GameGraphicsInfo, GameState, 216, 31);
-}
-
-void
 GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
 {
-	for (int GridX = 0; GridX < TileCountX; GridX++)
+	// Seed the random block generator
+	srand(time(NULL));
+
+	// Wipe the video buffer
+	uint32_t* Pixel = (uint32_t *)GameGraphicsInfo->BitmapMemory;
+	for (uint32_t Row = 0; Row < GameGraphicsInfo->Height; Row++)
 	{
-		for (int GridY = 0; GridY < TileCountY; GridY++)
+		for (uint32_t Column = 0; Column < GameGraphicsInfo->Width; Column++) 
 		{
-			GameStatus->Grid[GridX][GridY] = 0xFF000000;
+			*Pixel++ = 0xFF313131;
 		}
 	}
 
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF121212, 0, 0, GameGraphicsInfo->Width - 1, GameGraphicsInfo->Height - 1);
-	DrawEntireTetrisGrid(GameGraphicsInfo, GameStatus);
+	// Reset the board.
+	for (uint32_t Row = 0; Row < TileRowCount; Row++)
+	{
+		for (uint32_t Column = 0; Column < TileColumnCount; Column++)
+		{
+			GameStatus->Board[Row][Column] = TileBackgroundColor;
+		}
+	}
 
-	GameStatus->CurrentBlock = GetRandomBlock(GameStatus);
-	GameStatus->Status = Playing;
+	GameStatus->CurrentBlock = RequestRandomBlock();
+
+	// Draw the board.
+	DrawBoard(GameGraphicsInfo, GameStatus);
+
+	// Start The Game
+	GameStatus->Playing = true;
 }
 
-void
+void 
 GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState)
 {
-	if (GameState->Status == Playing)
-	{
-		DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
-		DrawTetrisBlock(GameGraphicsInfo, GameState->CurrentBlock);
-	}
-	if (GameState->Status == Finished) // One more draw to see the move the block before attempted placement...
-	{
-		DrawEntireTetrisGrid(GameGraphicsInfo, GameState);
-		DrawTetrisBlock(GameGraphicsInfo, GameState->CurrentBlock);
-		GameState->Status = Initalized;
-	}
+	DrawBoard(GameGraphicsInfo, GameState);
+	DrawBlock(GameGraphicsInfo, GameState);
 }

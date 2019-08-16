@@ -1,9 +1,7 @@
-#include "block.h"
 #include <windows.h>
-#include <time.h>
+#include "block.h"
 
-GameState GameStatus = {};
-static bool GameLoop = true;
+static GameState GameStatus = {};
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -16,15 +14,15 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		WPARAM VKCode = wParam;
 		if (VKCode == 'S')
 		{
-			MoveBlock(&GameStatus, 0, 1);
+			MoveBlock(&GameStatus, 1, 0);
 		}
 		else if (VKCode == 'A')
 		{
-			MoveBlock(&GameStatus, -1, 0);
+			MoveBlock(&GameStatus, 0, -1);
 		}
 		else if (VKCode == 'D')
 		{
-			MoveBlock(&GameStatus, 1, 0);
+			MoveBlock(&GameStatus, 0, 1);
 		}
 		else if (VKCode == 'J')
 		{
@@ -32,16 +30,15 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		}
 		else if (VKCode == VK_SPACE)
 		{
-			RapidDropBlock(&GameStatus);
+			DropBlock(&GameStatus);
 		}
-	}break;
+	} break;
 	case WM_TIMER:
 	{
-		MoveBlock(&GameStatus, 0, 1);
+		MoveBlock(&GameStatus, 1, 0);
 	} break;
 	case WM_CLOSE:
 	{
-		GameLoop = false;
 		// GameShutdown();
 	} break;
 	default:
@@ -50,6 +47,7 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 
 	return Result;
 }
+
 
 int WINAPI
 wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
@@ -118,9 +116,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	GameGraphicsInfo.Width = GameWindowWidth;
 	GameGraphicsInfo.Height = GameWindowHeight;
 
-	// Init Game
-	srand(time(NULL));
-	GameStatus.RandomNumber = rand() % 28;
+
 	GameInitialize(&GameGraphicsInfo, &GameStatus);
 
 	const int ID_TIMER = 1;
@@ -129,7 +125,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 
 	// Main event loop
 	MSG msg;
-	while (GetMessageW(&msg, hWnd, 0, 0) && GameLoop)
+	while (GetMessageW(&msg, hWnd, 0, 0))
 	{
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
@@ -148,7 +144,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		);
 		ReleaseDC(hWnd, hdc);
 	}
-	
+
 	// Cleanup Timer
 	KillTimer(hWnd, ID_TIMER);
 
