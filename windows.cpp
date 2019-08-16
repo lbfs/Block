@@ -1,7 +1,8 @@
 #include <windows.h>
 #include "block.h"
 
-static GameState GameStatus = {};
+static bool RunningGame = true;
+static char Key = '=';
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -12,33 +13,11 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 	case WM_KEYDOWN:
 	{
 		WPARAM VKCode = wParam;
-		if (VKCode == 'S')
-		{
-			MoveBlock(&GameStatus, 1, 0);
-		}
-		else if (VKCode == 'A')
-		{
-			MoveBlock(&GameStatus, 0, -1);
-		}
-		else if (VKCode == 'D')
-		{
-			MoveBlock(&GameStatus, 0, 1);
-		}
-		else if (VKCode == 'J')
-		{
-			RotateBlock(&GameStatus);
-		}
-		else if (VKCode == VK_SPACE)
-		{
-			DropBlock(&GameStatus);
-		}
-	} break;
-	case WM_TIMER:
-	{
-		MoveBlock(&GameStatus, 1, 0);
+		Key = VKCode;
 	} break;
 	case WM_CLOSE:
 	{
+		RunningGame = false;
 		// GameShutdown();
 	} break;
 	default:
@@ -116,22 +95,23 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	GameGraphicsInfo.Width = GameWindowWidth;
 	GameGraphicsInfo.Height = GameWindowHeight;
 
-
+	static GameState GameStatus = {};
 	GameInitialize(&GameGraphicsInfo, &GameStatus);
-
-	const int ID_TIMER = 1;
-	if (SetTimer(hWnd, ID_TIMER, 1000, NULL) == 0)
-		MessageBoxW(hWnd, L"Could not SetTimer()!", L"Error", MB_OK | MB_ICONEXCLAMATION);
 
 	// Main event loop
 	MSG msg;
-	while (GetMessageW(&msg, hWnd, 0, 0))
+	while (RunningGame)
 	{
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
+		while (PeekMessageW(&msg, hWnd, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
 
 		// Game Render Here
-		GameUpdate(&GameGraphicsInfo, &GameStatus);
+		GameUpdate(&GameGraphicsInfo, &GameStatus, Key);
+		// Clear Key
+		Key = '=';
 
 		HDC hdc = GetDC(hWnd);
 		StretchDIBits(hdc,
@@ -144,9 +124,6 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		);
 		ReleaseDC(hWnd, hdc);
 	}
-
-	// Cleanup Timer
-	KillTimer(hWnd, ID_TIMER);
 
 	// Cleanup Render Buffer
 	if (BitmapMemory != NULL)

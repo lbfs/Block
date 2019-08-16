@@ -14,8 +14,16 @@
 #define TileBorderColor 0xFF212121
 #define TileBackgroundColor 0x00000000
 
+#define AutomaticBlockDropTimeSeconds 0.5f
+
+#define BoardStartPositionX 272
+#define BoardStartPositionY 15
+
 #define BlockRotationCount 4
 #define BlockTypeCount 7
+
+#define PreviewStartPositionX 73
+#define PreviewStartPositionY 215
 
 const uint16_t BlockTypes[28] = { 3840,  8738,   240, 17476,    // I-Block 0
 								  36352, 25664,  3616, 17600,   // J-Block 4
@@ -48,6 +56,10 @@ struct GameState
 {
 	uint32_t Board[TileRowCount][TileColumnCount];
 	Block CurrentBlock;
+	Block NextBlock;
+	uint32_t Score;
+	uint32_t Level;
+	clock_t Time;
 	bool Playing;
 };
 
@@ -57,6 +69,6 @@ void PressBlock(GameState* GameStatus);
 void DropBlock(GameState* GameStatus);
 
 void GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameState);
-void GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState);
+void GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState, char Key);
 
 #endif
