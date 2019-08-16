@@ -14,7 +14,7 @@
 #define TileBorderColor 0xFF212121
 #define TileBackgroundColor 0x00000000
 
-#define AutomaticBlockDropTimeSeconds 0.5f
+#define AutomaticBlockDropTimeSeconds 0.75f
 
 #define BoardStartPositionX 272
 #define BoardStartPositionY 15
@@ -24,6 +24,10 @@
 
 #define PreviewStartPositionX 73
 #define PreviewStartPositionY 215
+#define PreviewRowCount 6
+#define PreviewColumnCount 6
+#define PreviewRowOffset 1
+#define PreviewColumnOffset 1
 
 const uint16_t BlockTypes[28] = { 3840,  8738,   240, 17476,    // I-Block 0
 								  36352, 25664,  3616, 17600,   // J-Block 4
@@ -34,6 +38,8 @@ const uint16_t BlockTypes[28] = { 3840,  8738,   240, 17476,    // I-Block 0
 								  50688,  9792,  3168, 19584 }; // Z-Block 24
 
 const uint32_t BlockColors[7] = { 0xFF00FFFF , 0xFF0000FF , 0xFFFFAA00 , 0xFFFFFF00 , 0xFF00FF00, 0xFF9900FF, 0xFFFF0000 };
+
+enum GameActivity { Finished = 0, Initalized = 1, Playing = 2};
 
 struct Block
 {
@@ -60,7 +66,7 @@ struct GameState
 	uint32_t Score;
 	uint32_t Level;
 	clock_t Time;
-	bool Playing;
+	GameActivity State;
 };
 
 void RotateBlock(GameState* GameStatus);
@@ -69,6 +75,8 @@ void PressBlock(GameState* GameStatus);
 void DropBlock(GameState* GameStatus);
 
 void GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameState);
+void GameStart(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus);
 void GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState, char Key);
+
 
 #endif

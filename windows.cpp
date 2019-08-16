@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <xinput.h>
 #include "block.h"
 
 static bool RunningGame = true;
@@ -71,7 +72,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	// Add menu for starting a new game, exiting the game, looking at saved scores.
 	HMENU hMenubar = CreateMenu();
 	HMENU hFileMenu = CreatePopupMenu();
-	AppendMenuW(hMenubar, MF_POPUP, (UINT_PTR)hFileMenu, L"&File");
+	AppendMenuW(hMenubar, MF_POPUP, (UINT_PTR)hFileMenu, L"&Menu");
 	SetMenu(hWnd, hMenubar);
 
 	// Create Render Buffer
@@ -97,6 +98,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 
 	static GameState GameStatus = {};
 	GameInitialize(&GameGraphicsInfo, &GameStatus);
+	GameStart(&GameGraphicsInfo, &GameStatus);
 
 	// Main event loop
 	MSG msg;
@@ -108,10 +110,16 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 			DispatchMessageW(&msg);
 		}
 
+		if (GameStatus.State == Finished)
+		{
+			continue;
+		}
+
 		// Game Render Here
 		GameUpdate(&GameGraphicsInfo, &GameStatus, Key);
 		// Clear Key
 		Key = '=';
+
 
 		HDC hdc = GetDC(hWnd);
 		StretchDIBits(hdc,
@@ -123,6 +131,11 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 			SRCCOPY
 		);
 		ReleaseDC(hWnd, hdc);
+
+		if (GameStatus.State == Finished)
+		{
+			MessageBoxW(hWnd, L"Game over!", L"Block", MB_OK | MB_ICONWARNING);
+		}
 	}
 
 	// Cleanup Render Buffer
