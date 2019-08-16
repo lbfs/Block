@@ -350,7 +350,8 @@ GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
 	GameStatus->State = Initalized;
 }
 
-void GameStart(GraphicsInfo* GameGraphicsInfo, GameState * GameStatus)
+void 
+GameStart(GraphicsInfo* GameGraphicsInfo, GameState * GameStatus)
 {
 	if (GameStatus->State == Finished)
 	{
