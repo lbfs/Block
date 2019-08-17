@@ -37,6 +37,22 @@ CheckBoardRow(GameBoard* Board, uint16_t Row)
 }
 
 /*
+A function to test if a row has any blocks. If a column is set, return true. If none, return false.
+*/
+bool
+CheckRowHasBlock(GameBoard* Board, uint16_t Row)
+{
+	for (uint16_t Column = 0; Column < Board->ColumnCount; Column++)
+	{
+		if (Board->Grid[Row][Column] != Board->DefaultColor)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
 A function to sort the board by the content of the rows. Moves all rows with full rows to the top
 and shifts each non-full row down.
 */
@@ -285,7 +301,7 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 		}
 
 		// Determine if we should spawn a new block.
-		if (!CanMoveBlock(&Session->Board, Session->NextBlock) || CheckBoardRow(&Session->Board, 0) || CheckBoardRow(&Session->Board, 1))
+		if (!CanMoveBlock(&Session->Board, Session->NextBlock) || CheckRowHasBlock(&Session->Board, 0) || CheckRowHasBlock(&Session->Board, 1))
 		{
 			Session->State = Finished;
 			return;

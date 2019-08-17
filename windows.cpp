@@ -5,7 +5,6 @@
 
 static bool RunningGame = true;
 static GameKey Key = None;
-static GameKey ControllerKey = None;
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -35,6 +34,30 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		else if (VKCode == VK_SPACE)
 		{
 			Key = Drop;
+		}
+	} break;
+	case WM_KEYUP:
+	{
+		WPARAM VKCode = wParam;
+		if (VKCode == 'S')
+		{
+			Key = None;
+		}
+		else if (VKCode == 'A')
+		{
+			Key = None;
+		}
+		else if (VKCode == 'D')
+		{
+			Key = None;
+		}
+		else if (VKCode == 'J')
+		{
+			Key = None;
+		}
+		else if (VKCode == VK_SPACE)
+		{
+			Key = None;
 		}
 	} break;
 	case WM_CLOSE:
@@ -159,36 +182,28 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		{
 			XINPUT_GAMEPAD* Pad = &ControllerState.Gamepad;
 
-			GameKey TempKey = None;
 			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN))
 			{
-				TempKey = Down;
+				Key = Down;
 			}
 			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT))
 			{
-				TempKey = Left;
+				Key = Left;
 			}
 			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
-				TempKey = Right;
+				Key = Right;
 			}
 			if ((Pad->wButtons & XINPUT_GAMEPAD_B))
 			{
-				TempKey = Rotate;
+				Key = Rotate;
 			}
 			if ((Pad->wButtons & XINPUT_GAMEPAD_A))
 			{
-				TempKey = Drop;
-			}
-
-			if (TempKey != ControllerKey)
-			{
-				ControllerKey = TempKey;
-				Key = TempKey;
+				Key = Drop;
 			}
 		}
 		// Game Render Here
 		GameUpdate(&Graphics, &Session, Key);
-		Key = None;
 
 		LARGE_INTEGER EndCounter;
 		QueryPerformanceCounter(&EndCounter);
@@ -220,7 +235,9 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 
 		if (Session.State == Finished)
 		{
-			MessageBoxW(hWnd, L"Game over!", L"Block", MB_OK | MB_ICONWARNING);
+			wchar_t Buffer[512];
+			wsprintfW(Buffer, L"Score: %d\nLines: %d\nLevel: %d\n", Session.Score, Session.LinesCleared, Session.Level);
+			MessageBoxW(hWnd, Buffer, L"Block", MB_OK | MB_ICONWARNING);
 		}
 	}
 
