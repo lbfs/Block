@@ -263,7 +263,9 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 
 		// Update Level Here?
 
-		if (!CanMoveBlock(&Session->Board, Session->NextBlock))
+
+		// Determine if we should spawn a new block.
+		if (!CanMoveBlock(&Session->Board, Session->NextBlock) || CheckBoardRow(&Session->Board, 0) || CheckBoardRow(&Session->Board, 1))
 		{
 			Session->State = Finished;
 			return;
