@@ -117,7 +117,12 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	Graphics.Height = GameWindowHeight;
 
 	GameSession Session = {};
-	GameInitialize(&Graphics, &Session);
+	if (!GameInitialize(&Graphics, &Session))
+	{
+		MessageBoxW(hWnd, L"Unable to initalize the game session.", L"Memory Error", MB_OK | MB_ICONWARNING);
+		return 0; //We should probably cleanup.
+	}
+
 	GameStart(&Graphics, &Session);
 	// Main event loop
 	MSG msg;

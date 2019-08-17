@@ -1,6 +1,5 @@
 #include "block.h"
 #include "draw.h"
-#include <windows.h>
 
 /* 
 A function that selects a random block from the block table with a custom rotation.
@@ -63,8 +62,8 @@ SortBoard(GameBoard * Board)
 }
 
 /* 
-A function that counts all the rows with full elements. 
-Additionally resets the row color to the selected color. 
+A function that counts all the rows with full elements up to the first row that is partially full.
+Additionally resets the row color to the selected color. Should only be called after calling SortBoard.
 */
 uint16_t
 ResetFullRows(GameBoard* Board)
