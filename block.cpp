@@ -123,13 +123,15 @@ CanMoveBlock(GameBoard * Board, GameBlock CopyBlock)
 			{
 				int32_t RealColumn = CopyBlock.X + Column;
 				int32_t RealRow = CopyBlock.Y + Row;
-				uint32_t CheckColor = CopyBlock.Color;
-				uint32_t BoardColor = Board->Grid[RealRow][RealColumn];
 
 				if (RealColumn > Board->ColumnCount - 1 || RealColumn < 0 || RealRow > Board->RowCount - 1 || RealRow < 0)
 				{
 					return false;
 				}
+
+				uint32_t CheckColor = CopyBlock.Color;
+				uint32_t BoardColor = Board->Grid[RealRow][RealColumn];
+
 				if (BoardColor != Board->DefaultColor)
 				{
 					return false;
@@ -255,7 +257,12 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 		PressBlock(&Session->Board, CopyBlock);
 
 		SortBoard(&Session->Board);
-		UpdateScore(Session, ResetFullRows(&Session->Board));
+
+		uint32_t LinesCleared = ResetFullRows(&Session->Board);
+		UpdateScore(Session, LinesCleared);
+		Session->LinesCleared += LinesCleared;
+
+		// Update Level Here?
 
 		if (!CanMoveBlock(&Session->Board, Session->NextBlock))
 		{
@@ -293,7 +300,7 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	Board.DefaultColor = TileBackgroundColor;
 
 	Board.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * TileRowCount); // Add error checking
-	for (int i = 0; i <= TileRowCount; i++)
+	for (int i = 0; i < TileRowCount; i++)
 	{
 		Board.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * TileColumnCount);
 	}
@@ -312,7 +319,7 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	PreviewBoard.DefaultColor = TileBackgroundColor;
 	
 	PreviewBoard.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * PreviewRowCount); // Add error checking
-	for (int i = 0; i <= PreviewRowCount; i++)
+	for (int i = 0; i < PreviewRowCount; i++)
 	{
 		PreviewBoard.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * PreviewColumnCount);
 	}
@@ -324,6 +331,9 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 
 	Session->Board = Board;
 	Session->PreviewBoard = PreviewBoard;
+
+	Session->BlockDropSeconds = AutomaticBlockDropTimeSeconds;
+	Session->LinesCleared = 0;
 
 	// Draw the board.
 	// Draw the board outline.
@@ -363,18 +373,19 @@ GameUpdate(GameGraphics * Graphics, GameSession* GameSession, GameKey Key)
 {
 	if (GameSession->State == Playing)
 	{
-		if ((clock() - GameSession->Time) / (float)CLOCKS_PER_SEC > AutomaticBlockDropTimeSeconds)
+		if ((clock() - GameSession->Time) / (float)CLOCKS_PER_SEC > GameSession->BlockDropSeconds)
 		{
 			ProcessKeyAction(GameSession, Down);
 			GameSession->Time = clock();
 		}
 
 		ProcessKeyAction(GameSession, Key);
-
-		DrawBoard(Graphics, &GameSession->Board, false);
-		DrawBlock(Graphics, GameSession->CurrentBlock, &GameSession->Board, false); 
-
-		DrawBoard(Graphics, &GameSession->PreviewBoard, true);
-		DrawBlock(Graphics, GameSession->NextBlock, &GameSession->PreviewBoard, true);
 	}
+
+	DrawBoard(Graphics, &GameSession->Board, false);
+	DrawBlock(Graphics, GameSession->CurrentBlock, &GameSession->Board, false); 
+
+	DrawBoard(Graphics, &GameSession->PreviewBoard, true);
+	DrawBlock(Graphics, GameSession->NextBlock, &GameSession->PreviewBoard, true);
+
 }

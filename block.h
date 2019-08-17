@@ -80,15 +80,17 @@ struct GameSession
 	GameBlock NextBlock;
 	uint32_t Score;
 	uint32_t Level;
+	uint32_t LinesCleared;
 	clock_t Time;
 	GameState State;
+	float BlockDropSeconds;
 };
 
 GameBlock GetRandomBlock();
 bool CheckBoardRow(GameBoard* Board, uint16_t Row);
 void SortBoard(GameBoard* Board);
 uint16_t ResetFullRows(GameBoard* Board);
-void UpdateScore(GameSession* Session, uint16_t RowsRemoved); // 
+void UpdateScore(GameSession* Session, uint16_t RowsRemoved);
 bool CanMoveBlock(GameBoard* Board, GameBlock CopyBlock);
 void PressBlock(GameBoard* Board, GameBlock CopyBlock);
 GameBlock RotateBlock(GameBlock CopyBlock);
