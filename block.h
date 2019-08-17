@@ -24,12 +24,14 @@
 
 #define PreviewStartPositionX 73
 #define PreviewStartPositionY 215
+// TODO: improve block rendering, so we can have a small board square
+// Maybe we should set a pivot bit and use that to determine the proper block coordinates?
 #define PreviewRowCount 6
 #define PreviewColumnCount 6
-#define PreviewRowOffset 1
-#define PreviewColumnOffset 1
+#define PreviewRowOffset 0
+#define PreviewColumnOffset 0
 
-const uint16_t BlockTypes[28] = { 3840,  8738,   240, 17476,    // I-Block 0
+const uint16_t BlockTypes[28] = { 3840,  8738,   3840, 8738,    // I-Block 0
 								  36352, 25664,  3616, 17600,   // J-Block 4
 								  11776, 17504,  3712, 50240,   // L-Block 8
 								  26112, 26112, 26112, 26112,   // O-Block 12

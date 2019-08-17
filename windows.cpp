@@ -138,6 +138,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	QueryPerformanceCounter(&LastCounter);
 	// End Game Update Rate
 
+
 	// Main event loop
 	MSG msg;
 	while (RunningGame)
@@ -185,10 +186,8 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 				Key = TempKey;
 			}
 		}
-
 		// Game Render Here
 		GameUpdate(&Graphics, &Session, Key);
-		// Clear Key
 		Key = None;
 
 		LARGE_INTEGER EndCounter;

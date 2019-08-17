@@ -403,12 +403,12 @@ GameStart(GameGraphics* Graphics, GameSession * Session)
 void 
 GameUpdate(GameGraphics * Graphics, GameSession* GameSession, GameKey Key)
 {
-		if (GameSession->CurrentFrameCount > GameSession->DropFrameCount)
+		if (GameSession->CurrentFrameCount % GameSession->DropFrameCount == 0)
 		{
 			ProcessKeyAction(GameSession, Down);
-			GameSession->CurrentFrameCount = 0;
+			GameSession->CurrentFrameCount;
 		}
-
+		
 		ProcessKeyAction(GameSession, Key);
 
 		DrawBoard(Graphics, &GameSession->Board, false);
