@@ -1,17 +1,17 @@
 #include "draw.h"
 
 void
-DrawCoordinateBox(GameGraphics* GraphicsInfo, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY)
+DrawCoordinateBox(GameGraphics* Graphics, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY)
 {
-	uint32_t* Pixel = (uint32_t*)GraphicsInfo->Buffer;
-	Pixel += (StartX + GraphicsInfo->Width * StartY);
+	uint32_t* Pixel = (uint32_t*)Graphics->Buffer;
+	Pixel += (StartX + Graphics->Width * StartY);
 	for (int Y = EndY - StartY; Y > 0; --Y)
 	{
 		for (int X = EndX - StartX; X > 0; --X)
 		{
 			*(Pixel + X) = HexColor;
 		}
-		Pixel += GraphicsInfo->Width;
+		Pixel += Graphics->Width;
 	}
 }
 

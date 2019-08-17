@@ -3,7 +3,7 @@
 
 #include "block.h"
 
-void DrawCoordinateBox(GameGraphics* GraphicsInfo, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY);
+void DrawCoordinateBox(GameGraphics* Graphics, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY);
 void DrawBlock(GameGraphics* Graphics, GameBlock Block, GameBoard* Board, bool UseBlockCoordinates);
 void DrawBoard(GameGraphics* Graphics, GameBoard* Board, bool UseDefaultColor);
 
