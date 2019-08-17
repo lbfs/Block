@@ -39,44 +39,65 @@ const uint16_t BlockTypes[28] = { 3840,  8738,   240, 17476,    // I-Block 0
 
 const uint32_t BlockColors[7] = { 0xFF00FFFF , 0xFF0000FF , 0xFFFFAA00 , 0xFFFFFF00 , 0xFF00FF00, 0xFF9900FF, 0xFFFF0000 };
 
-enum GameActivity { Finished = 0, Initalized = 1, Playing = 2};
+enum GameState { Finished = 0, Initalized = 1, Playing = 2};
+enum GameKey { None, Left, Right, Down, Rotate, Drop };
 
-struct Block
+struct GameBlock
 {
 	uint16_t Structure;
 	uint16_t Type;
 	uint16_t Rotation;
 	uint32_t Color;
-	int32_t Row;
-	int32_t Column;
+	int32_t X;
+	int32_t Y;
 };
 
-struct GraphicsInfo
+struct GameBoard
 {
-	void* BitmapMemory;
+	uint32_t ** Grid;
+	uint32_t DefaultColor;
+	uint16_t RowCount;
+	uint16_t ColumnCount;
+	uint16_t RenderSize;
+	uint16_t RenderX;
+	uint16_t RenderY;
+	uint16_t RenderColumnOffset;
+	uint16_t RenderRowOffset;
+};
+
+struct GameGraphics
+{
+	void* Buffer;
 	uint32_t Width;
 	uint32_t Height;
 };
 
-struct GameState
+struct GameSession
 {
-	uint32_t Board[TileRowCount][TileColumnCount];
-	Block CurrentBlock;
-	Block NextBlock;
+	GameBoard Board;
+	GameBoard PreviewBoard;
+	GameBlock CurrentBlock;
+	GameBlock NextBlock;
 	uint32_t Score;
 	uint32_t Level;
 	clock_t Time;
-	GameActivity State;
+	GameState State;
 };
 
-void RotateBlock(GameState* GameStatus);
-bool MoveBlock(GameState* GameStatus, int16_t Row, int16_t Column);
-void PressBlock(GameState* GameStatus);
-void DropBlock(GameState* GameStatus);
-
-void GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameState);
-void GameStart(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus);
-void GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState, char Key);
-
+GameBlock GetRandomBlock();
+bool CheckBoardRow(GameBoard* Board, uint16_t Row);
+void SortBoard(GameBoard* Board);
+uint16_t ResetFullRows(GameBoard* Board);
+void UpdateScore(GameSession* Session, uint16_t RowsRemoved); // 
+bool CanMoveBlock(GameBoard* Board, GameBlock CopyBlock);
+void PressBlock(GameBoard* Board, GameBlock CopyBlock);
+GameBlock RotateBlock(GameBlock CopyBlock);
+GameBlock MoveBlock(GameBlock CopyBlock, int16_t X, int16_t Y);
+GameBlock DropBlock(GameSession* Session, GameBlock CopyBlock);
+void ResetBoard(GameBoard* Board);
+void ProcessKeyAction(GameSession* Session, GameKey Key);
+bool GameInitialize(GameGraphics* Graphics, GameSession* Session);
+void GameStart(GameGraphics* Graphics, GameSession* Session);
+void GameUpdate(GameGraphics* Graphics, GameSession* GameSession, GameKey Key);
 
 #endif

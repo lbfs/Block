@@ -3,7 +3,7 @@
 #include "block.h"
 
 static bool RunningGame = true;
-static char Key = '=';
+static GameKey Key = None;
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -14,7 +14,26 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 	case WM_KEYDOWN:
 	{
 		WPARAM VKCode = wParam;
-		Key = VKCode;
+		if (VKCode == 'S')
+		{
+			Key = Down;
+		}
+		else if (VKCode == 'A')
+		{
+			Key = Left;
+		}
+		else if (VKCode == 'D')
+		{
+			Key = Right;
+		}
+		else if (VKCode == 'J')
+		{
+			Key = Rotate;
+		}
+		else if (VKCode == VK_SPACE)
+		{
+			Key = Drop;
+		}
 	} break;
 	case WM_CLOSE:
 	{
@@ -76,8 +95,8 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	SetMenu(hWnd, hMenubar);
 
 	// Create Render Buffer
-	void* BitmapMemory = VirtualAlloc(0, sizeof(uint32_t) * GameWindowWidth * GameWindowHeight, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	if (BitmapMemory == NULL)
+	void* BitmapBuffer = VirtualAlloc(0, sizeof(uint32_t) * GameWindowWidth * GameWindowHeight, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	if (BitmapBuffer == NULL)
 	{
 		MessageBoxW(hWnd, L"Unable to allocate enough memory for the backbuffer.", L"Memory Error", MB_OK | MB_ICONWARNING);
 		return 0; //We should probably cleanup.
@@ -91,15 +110,14 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	BitmapInfo.bmiHeader.biBitCount = 32;
 	BitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-	GraphicsInfo GameGraphicsInfo = {};
-	GameGraphicsInfo.BitmapMemory = BitmapMemory;
-	GameGraphicsInfo.Width = GameWindowWidth;
-	GameGraphicsInfo.Height = GameWindowHeight;
+	GameGraphics Graphics = {};
+	Graphics.Buffer = BitmapBuffer;
+	Graphics.Width = GameWindowWidth;
+	Graphics.Height = GameWindowHeight;
 
-	static GameState GameStatus = {};
-	GameInitialize(&GameGraphicsInfo, &GameStatus);
-	GameStart(&GameGraphicsInfo, &GameStatus);
-
+	GameSession Session = {};
+	GameInitialize(&Graphics, &Session);
+	GameStart(&Graphics, &Session);
 	// Main event loop
 	MSG msg;
 	while (RunningGame)
@@ -110,37 +128,37 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 			DispatchMessageW(&msg);
 		}
 
-		if (GameStatus.State == Finished)
+		if (Session.State == Finished)
 		{
 			continue;
 		}
 
 		// Game Render Here
-		GameUpdate(&GameGraphicsInfo, &GameStatus, Key);
+		GameUpdate(&Graphics, &Session, Key);
 		// Clear Key
-		Key = '=';
+		Key = None;
 
 
 		HDC hdc = GetDC(hWnd);
 		StretchDIBits(hdc,
 			0, 0, GameWindowWidth, GameWindowHeight, // TODO: ~ window resizing
 			0, 0, GameWindowWidth, GameWindowHeight,
-			BitmapMemory,
+			BitmapBuffer,
 			&BitmapInfo,
 			DIB_RGB_COLORS,
 			SRCCOPY
 		);
 		ReleaseDC(hWnd, hdc);
 
-		if (GameStatus.State == Finished)
+		if (Session.State == Finished)
 		{
 			MessageBoxW(hWnd, L"Game over!", L"Block", MB_OK | MB_ICONWARNING);
 		}
 	}
 
 	// Cleanup Render Buffer
-	if (BitmapMemory != NULL)
-		VirtualFree(BitmapMemory, 0, MEM_RELEASE);
+	if (BitmapBuffer != NULL)
+		VirtualFree(BitmapBuffer, 0, MEM_RELEASE);
 
 	// Unregister the Window Class
 	UnregisterClassW(lpszClassName, hInstance);

@@ -1,83 +1,35 @@
 #include "block.h"
+#include "draw.h"
+#include <windows.h>
 
-// TODO: Scoring System, Show Next Block, Properly Start Blocks at Correct Position (I.E. Not from "0,0" of the Block)
-// But rather 0,0 of the first hit block.
-
-void
-DrawCoordinateBox(GraphicsInfo* GameGraphicsInfo, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY)
+/* 
+A function that selects a random block from the block table with a custom rotation.
+Additionally, sets the starting block location.
+*/
+GameBlock
+GetRandomBlock()
 {
-	uint32_t* Pixel = (uint32_t*)GameGraphicsInfo->BitmapMemory;
-	Pixel += (StartX + GameGraphicsInfo->Width * StartY);
-	for (int Y = EndY - StartY; Y > 0; --Y )
-	{
-		for (int X = EndX - StartX; X > 0; --X)
-		{
-			*(Pixel + X) = HexColor;
-		}
-		Pixel += GameGraphicsInfo->Width;
-	}
+	GameBlock RandomBlock = {};
+	uint16_t BlockIndex = (rand() % BlockTypeCount);
+	RandomBlock.Rotation = rand() % BlockRotationCount;
+	RandomBlock.Type = (BlockIndex * BlockRotationCount) + RandomBlock.Rotation;
+	RandomBlock.Structure = BlockTypes[RandomBlock.Type];
+	RandomBlock.Color = BlockColors[BlockIndex];
+	RandomBlock.X = 3;
+	RandomBlock.Y = 0;
+	return RandomBlock;
 }
 
-void
-DrawBoard(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
-{
-	for (uint32_t Row = 0; Row < TileRowCount; Row++)
-	{
-		for (uint32_t Column = 0; Column < TileColumnCount; Column++)
-		{
-			uint32_t StartX = Column * TileRenderSize + BoardStartPositionX;
-			uint32_t StartY = Row * TileRenderSize + BoardStartPositionY;
-			int32_t EndX = StartX + TileRenderSize - 1;
-			int32_t EndY = StartY + TileRenderSize - 1;
-			DrawCoordinateBox(GameGraphicsInfo, GameStatus->Board[Row][Column], StartX, StartY, EndX, EndY);
-		}
-	}
-}
-
-void
-DrawPreviewBoard(GraphicsInfo* GameGraphicsInfo)
-{
-	for (uint32_t Row = 0; Row < PreviewRowCount; Row++)
-	{
-		for (uint32_t Column = 0; Column < PreviewColumnCount; Column++)
-		{
-			uint32_t StartX = Column * TileRenderSize + PreviewStartPositionX;
-			uint32_t StartY = Row * TileRenderSize + PreviewStartPositionY;
-			int32_t EndX = StartX + TileRenderSize - 1;
-			int32_t EndY = StartY + TileRenderSize - 1;
-			DrawCoordinateBox(GameGraphicsInfo, TileBackgroundColor, StartX, StartY, EndX, EndY);
-		}
-	}
-}
-
-void
-DrawBlock(GraphicsInfo* GameGraphicsInfo, Block CopyBlock, uint32_t BoardStartX, uint32_t BoardStartY)
-{
-	uint16_t Type = CopyBlock.Structure;
-	uint16_t HighBit = 1 << (16 - 1);
-	for (uint32_t Row = 0; Row < 4; Row++)
-	{
-		for (uint32_t Column = 0; Column < 4; Column++)
-		{
-			if (Type & HighBit)
-			{
-				uint32_t StartX = (Column * TileRenderSize) + (CopyBlock.Column * TileRenderSize) + BoardStartX;
-				uint32_t StartY = (Row * TileRenderSize) + (CopyBlock.Row * TileRenderSize) + BoardStartY;
-				int32_t EndX = StartX + TileRenderSize - 1;
-				int32_t EndY = StartY + TileRenderSize - 1;
-				DrawCoordinateBox(GameGraphicsInfo, CopyBlock.Color, StartX, StartY, EndX, EndY);
-			}
-			HighBit >>= 1;
-		}
-	}
-}
-
+/*
+A function to test the state of a row. If a row has all elements filled, return true. 
+If the row has any missing elements, return false.
+*/
 bool
-CheckBoardRow(GameState* GameStatus, uint16_t Row)
+CheckBoardRow(GameBoard* Board, uint16_t Row)
 {
-	for (uint16_t Column = 0; Column < TileColumnCount; Column++)
+	for (uint16_t Column = 0; Column < Board->ColumnCount; Column++)
 	{
-		if (GameStatus->Board[Row][Column] == TileBackgroundColor)
+		if (Board->Grid[Row][Column] == Board->DefaultColor)
 		{
 			return false;
 		}
@@ -85,50 +37,81 @@ CheckBoardRow(GameState* GameStatus, uint16_t Row)
 	return true;
 }
 
-// break into two functions CheckBoard and SortBoard
-
-uint16_t
-CheckBoardForFullRows(GameState* GameStatus)
+/*
+A function to sort the board by the content of the rows. Moves all rows with full rows to the top
+and shifts each non-full row down.
+*/
+void
+SortBoard(GameBoard * Board)
 {
-	// Partially filled or empty row is 0
-	// Full row is 1
-	// bool CheckBoardState[TileRowCount] = {false};
-	for (uint16_t i = 0; i < TileRowCount - 1; i++)
+	for (uint16_t i = 0; i < Board->RowCount - 1; i++)
 	{
-		for (uint16_t j = 0; j < TileRowCount - i - 1; j++)
+		for (uint16_t j = 0; j < Board->RowCount - i - 1; j++)
 		{
-			if (CheckBoardRow(GameStatus, j) < CheckBoardRow(GameStatus, j + 1))
+			if (CheckBoardRow(Board, j) < CheckBoardRow(Board, j + 1))
 			{
-				for (uint16_t Column = 0; Column < TileColumnCount; Column++)
+				for (uint16_t Column = 0; Column < Board->ColumnCount; Column++)
 				{
-					auto temp = GameStatus->Board[j][Column];
-					GameStatus->Board[j][Column] = GameStatus->Board[j + 1][Column];
-					GameStatus->Board[j + 1][Column] = temp;
+					uint32_t temp = Board->Grid[j][Column];
+					Board->Grid[j][Column] = Board->Grid[j + 1][Column];
+					Board->Grid[j + 1][Column] = temp;
 				}
 			}
 
 		}
 	}
+}
 
+/* 
+A function that counts all the rows with full elements. 
+Additionally resets the row color to the selected color. 
+*/
+uint16_t
+ResetFullRows(GameBoard* Board)
+{
 	uint16_t Count = 0;
-	// iterate over board
-	for (uint16_t Row = 0; Row < TileRowCount; Row++)
+	for (uint16_t Row = 0; Row < Board->RowCount; Row++)
 	{
-		if (!CheckBoardRow(GameStatus, Row))
+		if (!CheckBoardRow(Board, Row))
 			break;
 
-		for (uint16_t Column = 0; Column < TileColumnCount; Column++)
+		for (uint16_t Column = 0; Column < Board->ColumnCount; Column++)
 		{
-			GameStatus->Board[Row][Column] = TileBackgroundColor;
+			Board->Grid[Row][Column] = Board->DefaultColor;
 		}
-
 		Count++;
 	}
 	return Count;
 }
 
+/*
+A function to update the score based on the removed rows and the level of the current game.
+*/
+void
+UpdateScore(GameSession* Session, uint16_t RowsRemoved)
+{
+	switch (RowsRemoved)
+	{
+	case 1:
+		Session->Score += (40 * (Session->Level + 1));
+		break;
+	case 2:
+		Session->Score += (100 * (Session->Level + 1));
+		break;
+	case 3:
+		Session->Score += (300 * (Session->Level + 1));
+		break;
+	case 4:
+		Session->Score += (1200 * (Session->Level + 1));
+		break;
+	}
+}
+
+/* 
+A function that checks if the block supplied can fit at the desired position
+*/
 bool 
-CanMoveBlock(GameState* GameStatus, Block CopyBlock)
+CanMoveBlock(GameBoard * Board, GameBlock CopyBlock)
 {
 	uint16_t Type = CopyBlock.Structure;
 	uint16_t HighBit = 1 << (16 - 1);
@@ -138,16 +121,16 @@ CanMoveBlock(GameState* GameStatus, Block CopyBlock)
 		{
 			if (Type & HighBit)
 			{
-				int32_t RealRow = CopyBlock.Row + Row;
-				int32_t RealColumn = CopyBlock.Column + Column;
+				int32_t RealColumn = CopyBlock.X + Column;
+				int32_t RealRow = CopyBlock.Y + Row;
 				uint32_t CheckColor = CopyBlock.Color;
-				uint32_t BoardColor = GameStatus->Board[RealRow][RealColumn];
+				uint32_t BoardColor = Board->Grid[RealRow][RealColumn];
 
-				if (RealColumn > TileColumnCount - 1 || RealColumn < 0 || RealRow > TileRowCount - 1 || RealRow < 0)
+				if (RealColumn > Board->ColumnCount - 1 || RealColumn < 0 || RealRow > Board->RowCount - 1 || RealRow < 0)
 				{
 					return false;
 				}
-				if (BoardColor != TileBackgroundColor)
+				if (BoardColor != Board->DefaultColor)
 				{
 					return false;
 				}
@@ -158,45 +141,13 @@ CanMoveBlock(GameState* GameStatus, Block CopyBlock)
 	return true;
 }
 
-Block
-RequestRandomBlock()
-{
-	Block RandomBlock = {};
-	uint16_t BlockIndex = (rand() % BlockTypeCount);
-	RandomBlock.Rotation = rand() % BlockRotationCount;
-	RandomBlock.Type = ( BlockIndex * BlockRotationCount) + RandomBlock.Rotation;
-	RandomBlock.Structure = BlockTypes[RandomBlock.Type];
-	RandomBlock.Color = BlockColors[BlockIndex];
-
-	return RandomBlock;
-}
-
-void
-UpdateScore(GameState * GameStatus, uint16_t RowsRemoved)
-{ 
-	switch (RowsRemoved)
-	{
-	case 1:
-		GameStatus->Score += (40 * (GameStatus->Level + 1));
-		break;
-	case 2:
-		GameStatus->Score += (100 * (GameStatus->Level + 1));
-		break;
-	case 3:
-		GameStatus->Score += (300 * (GameStatus->Level + 1));
-		break;
-	case 4:
-		GameStatus->Score += (1200 * (GameStatus->Level + 1));
-		break;
-	default: // Shouldnt be possible for > 0, max rows removed can only be 4
-		break;
-	}
-}
-
+/* 
+A function to press a block into the board.
+*/
 void 
-PressBlock(GameState* GameStatus)
+PressBlock(GameBoard * Board, GameBlock CopyBlock)
 {
-	uint16_t Type = GameStatus->CurrentBlock.Structure;
+	uint16_t Type = CopyBlock.Structure;
 	uint16_t HighBit = 1 << (16 - 1);
 	for (int Row = 0; Row < 4; Row++)
 	{
@@ -204,182 +155,226 @@ PressBlock(GameState* GameStatus)
 		{
 			if (Type & HighBit)
 			{
-				int32_t RealColumn = GameStatus->CurrentBlock.Column + Column;
-				int32_t RealRow = GameStatus->CurrentBlock.Row + Row;
-				GameStatus->Board[RealRow][RealColumn] = GameStatus->CurrentBlock.Color;
+				int32_t RealColumn = CopyBlock.X + Column;
+				int32_t RealRow = CopyBlock.Y + Row;
+				Board->Grid[RealRow][RealColumn] = CopyBlock.Color;
 			}
 			HighBit >>= 1;
 		}
 	}
+}
 
-	//Move all of this out
+/* 
+A function that returns a new block with the rotated contents of the provided block.
+*/
+GameBlock 
+RotateBlock(GameBlock CopyBlock)
+{
+	uint16_t Rotation = CopyBlock.Rotation;
+	CopyBlock.Rotation = (Rotation + 1) % BlockRotationCount;
+	CopyBlock.Type = (CopyBlock.Type - Rotation) + CopyBlock.Rotation;
+	CopyBlock.Structure = BlockTypes[CopyBlock.Type];
+	return CopyBlock;
+}
 
-	// Update Gamescore
-	uint16_t RowsRemoved = CheckBoardForFullRows(GameStatus);
-	if (RowsRemoved)
+/* 
+A function that returns a new block with the moved contents of the provided block.
+*/
+GameBlock 
+MoveBlock(GameBlock CopyBlock, int16_t X, int16_t Y)
+{
+	CopyBlock.X += X;
+	CopyBlock.Y += Y;
+	return CopyBlock;
+}
+
+/* 
+A function that returns the last available block that can be pressed into a board. 
+If the inital block cannot be moved, that block is returned. 
+*/
+GameBlock
+DropBlock(GameSession* Session, GameBlock CopyBlock)
+{
+	GameBlock LastBlock = CopyBlock;
+	while (CanMoveBlock(&Session->Board, CopyBlock))
 	{
-		UpdateScore(GameStatus, RowsRemoved);
+		LastBlock = CopyBlock;
+		CopyBlock = MoveBlock(CopyBlock, 0, 1);
 	}
-	// Assume starting position
-	GameStatus->NextBlock.Row = 0;
-	GameStatus->NextBlock.Column = 3;
-	if (CanMoveBlock(GameStatus, GameStatus->NextBlock))
+	return LastBlock;
+}
+
+/*
+A function that resets the board to the default color.
+*/
+void
+ResetBoard(GameBoard* Board)
+{
+	for (uint32_t Row = 0; Row < Board->RowCount; Row++)
 	{
-		GameStatus->CurrentBlock = GameStatus->NextBlock;
+		for (uint32_t Column = 0; Column < Board->ColumnCount; Column++)
+		{
+			Board->Grid[Row][Column] = Board->DefaultColor;
+		}
 	}
-	else
-	{
-		GameStatus->State = Finished;
-	}
-	GameStatus->NextBlock = RequestRandomBlock();
 }
 
 void 
-RotateBlock(GameState* GameStatus)
+ProcessKeyAction(GameSession * Session, GameKey Key)
 {
-	Block CopyBlock = GameStatus->CurrentBlock;
-	CopyBlock.Rotation = (CopyBlock.Rotation + 1) % BlockRotationCount;
-	CopyBlock.Type = (CopyBlock.Type - GameStatus->CurrentBlock.Rotation) + CopyBlock.Rotation;
-	CopyBlock.Structure = BlockTypes[CopyBlock.Type];
-	if (CanMoveBlock(GameStatus, CopyBlock))
+	GameBlock CopyBlock;
+	switch (Key)
 	{
-		GameStatus->CurrentBlock = CopyBlock;
+		case Left:
+			CopyBlock = MoveBlock(Session->CurrentBlock, -1, 0);
+			break;
+		case Right:
+			CopyBlock = MoveBlock(Session->CurrentBlock, 1, 0);
+			break;
+		case Down:
+			CopyBlock = MoveBlock(Session->CurrentBlock, 0, 1);
+			break;
+		case Rotate:
+			CopyBlock = RotateBlock(Session->CurrentBlock);
+			break;
+		case Drop:
+			CopyBlock = DropBlock(Session, Session->CurrentBlock);
+			break;
+		default: // Not a servicable game action.
+			return;
+	}
+
+	bool CanBlockMove = CanMoveBlock(&Session->Board, CopyBlock);
+	if ((!CanBlockMove && Key == Down) || Key == Drop)
+	{
+		if (Key == Down)
+		{
+			CopyBlock = Session->CurrentBlock;
+		}
+
+		PressBlock(&Session->Board, CopyBlock);
+
+		SortBoard(&Session->Board);
+		UpdateScore(Session, ResetFullRows(&Session->Board));
+
+		if (!CanMoveBlock(&Session->Board, Session->NextBlock))
+		{
+			Session->State = Finished;
+			return;
+		}
+		
+		Session->CurrentBlock = Session->NextBlock;
+		Session->NextBlock = GetRandomBlock();
+	}
+	else if (CanBlockMove)
+	{
+		Session->CurrentBlock = CopyBlock;
 	}
 }
 
 bool 
-MoveBlock(GameState* GameStatus, int16_t Row, int16_t Column)
-{
-	Block CopyBlock = GameStatus->CurrentBlock;
-	CopyBlock.Row += Row;
-	CopyBlock.Column += Column;
-	// TODO: move all of this out, only return if the block can be moved
-	if (CanMoveBlock(GameStatus, CopyBlock))
-	{
-		GameStatus->CurrentBlock = CopyBlock;
-		return true;
-	}
-	else
-	{	
-		if (Row == 1 && Column == 0)
-		{
-			PressBlock(GameStatus);
-		}
-		return false;
-	}
-}
-
-void
-DropBlock(GameState* GameStatus)
-{
-	while (MoveBlock(GameStatus, 1, 0)) {}
-}
-
-void 
-ProcessKeyAction(GameState * GameStatus, char Key)
-{
-	// TODO: Remove all of this, standardize keys, put in main game loop with Switch Statement
-	if (Key == 'S')
-	{
-		MoveBlock(GameStatus, 1, 0);
-	}
-	else if (Key == 'A')
-	{
-		MoveBlock(GameStatus, 0, -1);
-	}
-	else if (Key == 'D')
-	{
-		MoveBlock(GameStatus, 0, 1);
-	}
-	else if (Key == 'J')
-	{
-		RotateBlock(GameStatus);
-	}
-	else if (Key == 0x20)
-	{
-		DropBlock(GameStatus);
-	}
-}
-
-void 
-GameInitialize(GraphicsInfo* GameGraphicsInfo, GameState* GameStatus)
+GameInitialize(GameGraphics * Graphics, GameSession* Session)
 {
 	// Seed the random block generator
 	srand(time(NULL));
 
 	// Wipe the video buffer
-	uint32_t* Pixel = (uint32_t*)GameGraphicsInfo->BitmapMemory;
-	for (uint32_t Row = 0; Row < GameGraphicsInfo->Height; Row++)
+	DrawCoordinateBox(Graphics, 0xFF121212, 0, 0, Graphics->Width, Graphics->Height);
+
+	// Create and reset the board
+	GameBoard Board;
+	Board.ColumnCount = TileColumnCount;
+	Board.RowCount = TileRowCount;
+	Board.RenderX = BoardStartPositionX;
+	Board.RenderY = BoardStartPositionY;
+	Board.RenderSize = TileRenderSize;
+	Board.RenderRowOffset = 0;
+	Board.RenderColumnOffset = 0;
+	Board.DefaultColor = TileBackgroundColor;
+
+	Board.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * TileRowCount); // Add error checking
+	for (int i = 0; i <= TileRowCount; i++)
 	{
-		for (uint32_t Column = 0; Column < GameGraphicsInfo->Width; Column++)
-		{
-			*Pixel++ = 0xFF121212;
-		}
+		Board.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * TileColumnCount);
 	}
 
-	// Reset the board.
-	for (uint32_t Row = 0; Row < TileRowCount; Row++)
+	ResetBoard(&Board);
+
+	// Create and reset the preview board
+	GameBoard PreviewBoard;
+	PreviewBoard.ColumnCount = PreviewColumnCount;
+	PreviewBoard.RowCount = PreviewRowCount;
+	PreviewBoard.RenderX = PreviewStartPositionX;
+	PreviewBoard.RenderY = PreviewStartPositionY;
+	PreviewBoard.RenderSize = TileRenderSize;
+	PreviewBoard.RenderRowOffset = 1;
+	PreviewBoard.RenderColumnOffset= 1;
+	PreviewBoard.DefaultColor = TileBackgroundColor;
+	
+	PreviewBoard.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * PreviewRowCount); // Add error checking
+	for (int i = 0; i <= PreviewRowCount; i++)
 	{
-		for (uint32_t Column = 0; Column < TileColumnCount; Column++)
-		{
-			GameStatus->Board[Row][Column] = TileBackgroundColor;
-		}
+		PreviewBoard.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * PreviewColumnCount);
 	}
 
-	GameStatus->CurrentBlock = RequestRandomBlock();
-	// Assume starting position NOTE: REMOVE THIS AND THE ONE IN PRESSBLOCK();
-	GameStatus->CurrentBlock.Row = 0;
-	GameStatus->CurrentBlock.Column = 3;
-	GameStatus->NextBlock = RequestRandomBlock();
+	ResetBoard(&PreviewBoard);
 
-	// Draw the board outline
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF9E351A, BoardStartPositionX - 1, BoardStartPositionY - 1, BoardStartPositionX + (TileRenderSize * TileColumnCount), BoardStartPositionY + (TileRenderSize * TileRowCount));
+	Session->CurrentBlock = GetRandomBlock();
+	Session->NextBlock = GetRandomBlock();
 
-	// Draw the tile border
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF212121, BoardStartPositionX, BoardStartPositionY, BoardStartPositionX + (TileRenderSize * TileColumnCount) - 1, BoardStartPositionY + (TileRenderSize * TileRowCount) - 1);
-
-	// Draw the preview board outline
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF9E351A, PreviewStartPositionX - 1, PreviewStartPositionY - 1, PreviewStartPositionX + (TileRenderSize * PreviewColumnCount), PreviewStartPositionY + (TileRenderSize * PreviewRowCount));
-
-	// Draw the preview tile border
-	DrawCoordinateBox(GameGraphicsInfo, 0xFF212121, PreviewStartPositionX, PreviewStartPositionY, PreviewStartPositionX + (TileRenderSize * PreviewColumnCount) - 1, PreviewStartPositionY + (TileRenderSize * PreviewRowCount) - 1);
+	Session->Board = Board;
+	Session->PreviewBoard = PreviewBoard;
 
 	// Draw the board.
-	DrawBoard(GameGraphicsInfo, GameStatus);
+	// Draw the board outline.
+	DrawCoordinateBox(Graphics, 0xFF9E351A, BoardStartPositionX - 1, BoardStartPositionY - 1, BoardStartPositionX + (TileRenderSize * TileColumnCount), BoardStartPositionY + (TileRenderSize * TileRowCount));
+	// Draw the tile border
+	DrawCoordinateBox(Graphics, 0xFF212121, BoardStartPositionX, BoardStartPositionY, BoardStartPositionX + (TileRenderSize * TileColumnCount) - 1, BoardStartPositionY + (TileRenderSize * TileRowCount) - 1);
+	DrawBoard(Graphics, &Board, false);
 
-	GameStatus->State = Initalized;
+
+	DrawCoordinateBox(Graphics, 0xFF9E351A, PreviewStartPositionX - 1, PreviewStartPositionY - 1, PreviewStartPositionX + (TileRenderSize * PreviewColumnCount), PreviewStartPositionY + (TileRenderSize * PreviewRowCount));
+	// Draw the preview tile border
+	DrawCoordinateBox(Graphics, 0xFF212121, PreviewStartPositionX, PreviewStartPositionY, PreviewStartPositionX + (TileRenderSize * PreviewColumnCount) - 1, PreviewStartPositionY + (TileRenderSize * PreviewRowCount) - 1);
+
+	DrawBoard(Graphics, &PreviewBoard, true);
+
+	Session->State = Initalized;
+	return true;
 }
 
 void 
-GameStart(GraphicsInfo* GameGraphicsInfo, GameState * GameStatus)
+GameStart(GameGraphics* Graphics, GameSession * Session)
 {
-	if (GameStatus->State == Finished)
+	if (Session->State == Finished)
 	{
-		GameInitialize(GameGraphicsInfo, GameStatus);
+		// call shutdown or free memory
+		GameInitialize(Graphics, Session);
 	}
-	if (GameStatus->State == Initalized)
+	if (Session->State == Initalized)
 	{
-		GameStatus->State = Playing;
-		GameStatus->Time = clock();
+		Session->State = Playing;
+		Session->Time = clock();
 	}
 }
 
 void 
-GameUpdate(GraphicsInfo* GameGraphicsInfo, GameState* GameState, char Key)
+GameUpdate(GameGraphics * Graphics, GameSession* GameSession, GameKey Key)
 {
-	if (GameState->State == Playing)
+	if (GameSession->State == Playing)
 	{
-		if ((clock() - GameState->Time) / (float)CLOCKS_PER_SEC > AutomaticBlockDropTimeSeconds)
+		if ((clock() - GameSession->Time) / (float)CLOCKS_PER_SEC > AutomaticBlockDropTimeSeconds)
 		{
-			ProcessKeyAction(GameState, 'S');
-			GameState->Time = clock();
+			ProcessKeyAction(GameSession, Down);
+			GameSession->Time = clock();
 		}
 
-		ProcessKeyAction(GameState, Key);
-		DrawBoard(GameGraphicsInfo, GameState);
-		DrawBlock(GameGraphicsInfo, GameState->CurrentBlock, BoardStartPositionX, BoardStartPositionY);
+		ProcessKeyAction(GameSession, Key);
 
-		DrawPreviewBoard(GameGraphicsInfo);
-		DrawBlock(GameGraphicsInfo, GameState->NextBlock, PreviewStartPositionX + (TileRenderSize * PreviewColumnOffset), PreviewStartPositionY + (TileRenderSize * PreviewRowOffset)); // Draw Preview Block
+		DrawBoard(Graphics, &GameSession->Board, false);
+		DrawBlock(Graphics, GameSession->CurrentBlock, &GameSession->Board, false); 
+
+		DrawBoard(Graphics, &GameSession->PreviewBoard, true);
+		DrawBlock(Graphics, GameSession->NextBlock, &GameSession->PreviewBoard, true);
 	}
 }

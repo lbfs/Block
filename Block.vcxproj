@@ -126,10 +126,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="block.cpp" />
+    <ClCompile Include="draw.cpp" />
     <ClCompile Include="windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="block.h" />
+    <ClInclude Include="draw.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
