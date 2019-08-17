@@ -279,6 +279,9 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 	}
 }
 
+/* 
+A function to initalize the game state. If the memory allocation for the board states fail, then we return false.
+*/
 bool 
 GameInitialize(GameGraphics * Graphics, GameSession* Session)
 {
@@ -300,9 +303,13 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	Board.DefaultColor = TileBackgroundColor;
 
 	Board.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * TileRowCount); // Add error checking
+	if (Board.Grid == NULL)
+		return false;
 	for (int i = 0; i < TileRowCount; i++)
 	{
 		Board.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * TileColumnCount);
+		if (Board.Grid == NULL)
+			return false;
 	}
 
 	ResetBoard(&Board);
@@ -319,9 +326,13 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	PreviewBoard.DefaultColor = TileBackgroundColor;
 	
 	PreviewBoard.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * PreviewRowCount); // Add error checking
+	if (PreviewBoard.Grid == NULL)
+		return false;
 	for (int i = 0; i < PreviewRowCount; i++)
 	{
 		PreviewBoard.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * PreviewColumnCount);
+		if (PreviewBoard.Grid == NULL)
+			return false;
 	}
 
 	ResetBoard(&PreviewBoard);

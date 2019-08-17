@@ -4,6 +4,7 @@
 
 static bool RunningGame = true;
 static GameKey Key = None;
+static GameKey ControllerKey = None;
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -131,6 +132,39 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		if (Session.State == Finished)
 		{
 			continue;
+		}
+
+		XINPUT_STATE ControllerState;
+		if (XInputGetState(0, &ControllerState) == ERROR_SUCCESS)
+		{
+			XINPUT_GAMEPAD* Pad = &ControllerState.Gamepad;
+
+			GameKey TempKey = None;
+			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN))
+			{
+				TempKey = Down;
+			}
+			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT))
+			{
+				TempKey = Left;
+			}
+			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
+				TempKey = Right;
+			}
+			if ((Pad->wButtons & XINPUT_GAMEPAD_B))
+			{
+				TempKey = Rotate;
+			}
+			if ((Pad->wButtons & XINPUT_GAMEPAD_A))
+			{
+				TempKey = Drop;
+			}
+
+			if (TempKey != ControllerKey)
+			{
+				ControllerKey = TempKey;
+				Key = TempKey;
+			}
 		}
 
 		// Game Render Here
