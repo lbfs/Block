@@ -10,8 +10,8 @@ GetRandomBlock()
 {
 	GameBlock RandomBlock = {};
 	uint16_t BlockIndex = (rand() % BlockTypeCount);
-	RandomBlock.Rotation = rand() % BlockRotationCount;
-	RandomBlock.Type = (BlockIndex * BlockRotationCount) + RandomBlock.Rotation;
+	RandomBlock.Type = (BlockIndex * BlockRotationCount);
+	RandomBlock.Rotation = 0;
 	RandomBlock.Structure = BlockTypes[RandomBlock.Type];
 	RandomBlock.Color = BlockColors[BlockIndex];
 	RandomBlock.X = 3;
@@ -220,6 +220,19 @@ ResetBoard(GameBoard* Board)
 	}
 }
 
+void
+UpdateLevelSpeed(GameSession* Session)
+{
+	if (Session->Level < 28) // TODO: Define
+	{
+		Session->DropFrameCount = GravitySpeeds[Session->Level];
+	}
+	else
+	{
+		Session->DropFrameCount = 1;
+	}
+}
+
 void 
 ProcessKeyAction(GameSession * Session, GameKey Key)
 {
@@ -261,8 +274,15 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 		UpdateScore(Session, LinesCleared);
 		Session->LinesCleared += LinesCleared;
 
-		// Update Level Here?
-
+		// Update Level
+		if (LinesCleared)
+		{
+			if (Session->LinesCleared % 10 == 0)
+			{
+				Session->Level++;
+				UpdateLevelSpeed(Session);
+			}
+		}
 
 		// Determine if we should spawn a new block.
 		if (!CanMoveBlock(&Session->Board, Session->NextBlock) || CheckBoardRow(&Session->Board, 0) || CheckBoardRow(&Session->Board, 1))
@@ -344,8 +364,10 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	Session->Board = Board;
 	Session->PreviewBoard = PreviewBoard;
 
-	Session->BlockDropSeconds = AutomaticBlockDropTimeSeconds;
 	Session->LinesCleared = 0;
+
+	Session->Level = 0;
+	UpdateLevelSpeed(Session);
 
 	// Draw the board.
 	// Draw the board outline.
@@ -353,7 +375,6 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	// Draw the tile border
 	DrawCoordinateBox(Graphics, 0xFF212121, BoardStartPositionX, BoardStartPositionY, BoardStartPositionX + (TileRenderSize * TileColumnCount) - 1, BoardStartPositionY + (TileRenderSize * TileRowCount) - 1);
 	DrawBoard(Graphics, &Board, false);
-
 
 	DrawCoordinateBox(Graphics, 0xFF9E351A, PreviewStartPositionX - 1, PreviewStartPositionY - 1, PreviewStartPositionX + (TileRenderSize * PreviewColumnCount), PreviewStartPositionY + (TileRenderSize * PreviewRowCount));
 	// Draw the preview tile border
@@ -376,28 +397,23 @@ GameStart(GameGraphics* Graphics, GameSession * Session)
 	if (Session->State == Initalized)
 	{
 		Session->State = Playing;
-		Session->Time = clock();
 	}
 }
 
 void 
 GameUpdate(GameGraphics * Graphics, GameSession* GameSession, GameKey Key)
 {
-	if (GameSession->State == Playing)
-	{
-		if ((clock() - GameSession->Time) / (float)CLOCKS_PER_SEC > GameSession->BlockDropSeconds)
+		if (GameSession->CurrentFrameCount > GameSession->DropFrameCount)
 		{
 			ProcessKeyAction(GameSession, Down);
-			GameSession->Time = clock();
+			GameSession->CurrentFrameCount = 0;
 		}
 
 		ProcessKeyAction(GameSession, Key);
-	}
 
-	DrawBoard(Graphics, &GameSession->Board, false);
-	DrawBlock(Graphics, GameSession->CurrentBlock, &GameSession->Board, false); 
-
-	DrawBoard(Graphics, &GameSession->PreviewBoard, true);
-	DrawBlock(Graphics, GameSession->NextBlock, &GameSession->PreviewBoard, true);
-
+		DrawBoard(Graphics, &GameSession->Board, false);
+		DrawBlock(Graphics, GameSession->CurrentBlock, &GameSession->Board, false);
+		DrawBoard(Graphics, &GameSession->PreviewBoard, true);
+		DrawBlock(Graphics, GameSession->NextBlock, &GameSession->PreviewBoard, true);
+		GameSession->CurrentFrameCount++;
 }

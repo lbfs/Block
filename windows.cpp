@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <stdio.h>
 #include <xinput.h>
 #include "block.h"
 
@@ -52,6 +53,10 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 int WINAPI
 wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
+	LARGE_INTEGER PerfCountFrequencyResult;
+	QueryPerformanceFrequency(&PerfCountFrequencyResult);
+	int64_t PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+
 	// TODO: Fix control flow to avoid potential errors.
 	LPCWSTR lpszClassName = L"BlockGameWindowClass";
 
@@ -124,6 +129,15 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	}
 
 	GameStart(&Graphics, &Session);
+
+	// Game Update Rate
+	uint16_t GameUpdateRateHz = 60;
+	float TargetFrameRateSeconds = 1.0f / (float)GameUpdateRateHz;
+
+	LARGE_INTEGER LastCounter;
+	QueryPerformanceCounter(&LastCounter);
+	// End Game Update Rate
+
 	// Main event loop
 	MSG msg;
 	while (RunningGame)
@@ -177,6 +191,22 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		// Clear Key
 		Key = None;
 
+		LARGE_INTEGER EndCounter;
+		QueryPerformanceCounter(&EndCounter);
+
+		int64_t CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+		float SPF = (float)CounterElapsed / (float)PerfCountFrequency;
+		while (SPF < TargetFrameRateSeconds)
+		{
+			LARGE_INTEGER EndCounter;
+			QueryPerformanceCounter(&EndCounter);
+			CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+			SPF = (float)CounterElapsed / (float)PerfCountFrequency;
+			// TODO: Don't liquify the CPU.
+		}
+
+		QueryPerformanceCounter(&EndCounter);
+		LastCounter = EndCounter;
 
 		HDC hdc = GetDC(hWnd);
 		StretchDIBits(hdc,

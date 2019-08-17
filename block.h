@@ -38,6 +38,8 @@ const uint16_t BlockTypes[28] = { 3840,  8738,   240, 17476,    // I-Block 0
 								  50688,  9792,  3168, 19584 }; // Z-Block 24
 
 const uint32_t BlockColors[7] = { 0xFF00FFFF , 0xFF0000FF , 0xFFFFAA00 , 0xFFFFFF00 , 0xFF00FF00, 0xFF9900FF, 0xFFFF0000 };
+const uint32_t GravitySpeeds[28] = {48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+// When >= 29, Assume 1
 
 enum GameState { Finished = 0, Initalized = 1, Playing = 2};
 enum GameKey { None, Left, Right, Down, Rotate, Drop };
@@ -81,9 +83,9 @@ struct GameSession
 	uint32_t Score;
 	uint32_t Level;
 	uint32_t LinesCleared;
-	clock_t Time;
 	GameState State;
-	float BlockDropSeconds;
+	uint32_t CurrentFrameCount;
+	uint32_t DropFrameCount;
 };
 
 GameBlock GetRandomBlock();
