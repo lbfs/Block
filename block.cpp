@@ -387,9 +387,14 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	Session->Board = Board;
 	Session->PreviewBoard = PreviewBoard;
 
-	Session->LinesCleared = 0;
+	Session->CurrentFrameCount = 0;
+	Session->DasCounter = 0;
+	Session->PreviousKeys = {};
 
+	Session->LinesCleared = 0;
+	Session->Score = 0;
 	Session->Level = 0;
+
 	UpdateLevelSpeed(Session);
 
 	// Draw the board.
