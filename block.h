@@ -7,14 +7,12 @@
 
 #define GameWindowWidth 800
 #define GameWindowHeight 600
-
 #define TileRenderSize 26
+#define TileBorderColor 0xFF212121
+
 #define TileRowCount 22
 #define TileColumnCount 10
-#define TileBorderColor 0xFF212121
 #define TileBackgroundColor 0x00000000
-
-#define AutomaticBlockDropTimeSeconds 0.75f
 
 #define BoardStartPositionX 272
 #define BoardStartPositionY 15
@@ -28,8 +26,10 @@
 // Maybe we should set a pivot bit and use that to determine the proper block coordinates?
 #define PreviewRowCount 6
 #define PreviewColumnCount 6
-#define PreviewRowOffset 0
-#define PreviewColumnOffset 0
+
+// Delayed Auto Shift
+#define DASInitialDelayFrames 16
+#define DASMinimumFrames 6
 
 const uint16_t BlockTypes[28] = { 3840,  8738,   3840, 8738,    // I-Block 0
 								  36352, 25664,  3616, 17600,   // J-Block 4
@@ -88,6 +88,8 @@ struct GameSession
 	GameState State;
 	uint32_t CurrentFrameCount;
 	uint32_t DropFrameCount;
+	uint32_t DasCounter;
+	GameKey PreviousKey;
 };
 
 GameBlock GetRandomBlock();
@@ -101,7 +103,7 @@ GameBlock RotateBlock(GameBlock CopyBlock);
 GameBlock MoveBlock(GameBlock CopyBlock, int16_t X, int16_t Y);
 GameBlock DropBlock(GameSession* Session, GameBlock CopyBlock);
 void ResetBoard(GameBoard* Board);
-void ProcessKeyAction(GameSession* Session, GameKey Key);
+bool ProcessKeyAction(GameSession* Session, GameKey Key);
 bool GameInitialize(GameGraphics* Graphics, GameSession* Session);
 void GameStart(GameGraphics* Graphics, GameSession* Session);
 void GameUpdate(GameGraphics* Graphics, GameSession* GameSession, GameKey Key);

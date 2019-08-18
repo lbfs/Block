@@ -249,7 +249,7 @@ UpdateLevelSpeed(GameSession* Session)
 	}
 }
 
-void 
+bool 
 ProcessKeyAction(GameSession * Session, GameKey Key)
 {
 	GameBlock CopyBlock;
@@ -271,7 +271,7 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 			CopyBlock = DropBlock(Session, Session->CurrentBlock);
 			break;
 		default: // Not a servicable game action.
-			return;
+			return false;
 	}
 
 	bool CanBlockMove = CanMoveBlock(&Session->Board, CopyBlock);
@@ -304,15 +304,22 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 		if (!CanMoveBlock(&Session->Board, Session->NextBlock) || CheckRowHasBlock(&Session->Board, 0) || CheckRowHasBlock(&Session->Board, 1))
 		{
 			Session->State = Finished;
-			return;
+			return false;
 		}
 		
 		Session->CurrentBlock = Session->NextBlock;
 		Session->NextBlock = GetRandomBlock();
+
+		return false;
 	}
 	else if (CanBlockMove)
 	{
 		Session->CurrentBlock = CopyBlock;
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }
 
@@ -417,19 +424,47 @@ GameStart(GameGraphics* Graphics, GameSession * Session)
 }
 
 void 
-GameUpdate(GameGraphics * Graphics, GameSession* GameSession, GameKey Key)
+GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKey Key)
 {
-		if (GameSession->CurrentFrameCount % GameSession->DropFrameCount == 0)
-		{
-			ProcessKeyAction(GameSession, Down);
-			GameSession->CurrentFrameCount;
-		}
-		
-		ProcessKeyAction(GameSession, Key);
 
-		DrawBoard(Graphics, &GameSession->Board, false);
-		DrawBlock(Graphics, GameSession->CurrentBlock, &GameSession->Board, false);
-		DrawBoard(Graphics, &GameSession->PreviewBoard, true);
-		DrawBlock(Graphics, GameSession->NextBlock, &GameSession->PreviewBoard, true);
-		GameSession->CurrentFrameCount++;
+	if (Session->CurrentFrameCount % Session->DropFrameCount == 0)
+	{
+		ProcessKeyAction(Session, Down);
+		Session->CurrentFrameCount;
+	}
+
+	if (Key == Left || Key == Right)
+	{
+		if (Session->PreviousKey != Key) // Was Left Now Right || Was Right Now Left
+		{
+			Session->DasCounter = 0;
+			ProcessKeyAction(Session, Key);
+		}
+		else
+		{
+			if (Session->DasCounter < DASInitialDelayFrames)
+			{
+				Session->DasCounter++;
+			}
+			if (Session->DasCounter == DASInitialDelayFrames) // else?
+			{
+				if (ProcessKeyAction(Session, Key))
+				{
+					Session->DasCounter -= DASMinimumFrames;
+				}
+			}
+		}
+	}
+	else
+	{
+		ProcessKeyAction(Session, Key);
+	}
+
+	DrawBoard(Graphics, &Session->Board, false);
+	DrawBlock(Graphics, Session->CurrentBlock, &Session->Board, false);
+	DrawBoard(Graphics, &Session->PreviewBoard, true);
+	DrawBlock(Graphics, Session->NextBlock, &Session->PreviewBoard, true);
+	Session->CurrentFrameCount++;
+
+	Session->PreviousKey = Key;
 }

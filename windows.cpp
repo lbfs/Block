@@ -154,7 +154,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	GameStart(&Graphics, &Session);
 
 	// Game Update Rate
-	uint16_t GameUpdateRateHz = 60;
+	float GameUpdateRateHz = 60;
 	float TargetFrameRateSeconds = 1.0f / (float)GameUpdateRateHz;
 
 	LARGE_INTEGER LastCounter;
@@ -177,6 +177,7 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 			continue;
 		}
 
+		/*
 		XINPUT_STATE ControllerState;
 		if (XInputGetState(0, &ControllerState) == ERROR_SUCCESS)
 		{
@@ -202,8 +203,17 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 				Key = Drop;
 			}
 		}
+		*/
+
 		// Game Render Here
 		GameUpdate(&Graphics, &Session, Key);
+
+		if (Key == Rotate || Key == Drop) // REMOVE
+			Key = None;
+
+		if (Key == Down) // REMOVE, REPLACE WITH 1/2G
+			Key = None;
+
 
 		LARGE_INTEGER EndCounter;
 		QueryPerformanceCounter(&EndCounter);
