@@ -196,7 +196,6 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 			continue;
 		}
 
-		/*
 		XINPUT_STATE ControllerState;
 		if (XInputGetState(0, &ControllerState) == ERROR_SUCCESS)
 		{
@@ -247,7 +246,6 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 				Keys.Drop = false;
 			}
 		}
-		*/
 
 		// Game Render Here
 		GameUpdate(&Graphics, &Session, Keys);
