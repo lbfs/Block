@@ -153,7 +153,8 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	Graphics.Height = GameWindowHeight;
 
 
-	if (!GameInitialize(&Graphics, &Session))
+	bool DidGameInitalize = GameInitialize(&Graphics, &Session);
+	if (!DidGameInitalize)
 	{
 		MessageBoxW(hWnd, L"Unable to initalize the game session.", L"Memory Error", MB_OK | MB_ICONWARNING);
 		return 0; //We should probably cleanup.
@@ -284,6 +285,11 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 			wsprintfW(Buffer, L"Score: %d\nLines: %d\nLevel: %d\n", Session.Score, Session.LinesCleared, Session.Level);
 			MessageBoxW(hWnd, Buffer, L"Block", MB_OK | MB_ICONWARNING);
 		}
+	}
+
+	if (DidGameInitalize)
+	{
+		GameShutdown(&Session);
 	}
 
 	// Cleanup Render Buffer
