@@ -3,8 +3,11 @@
 #include <xinput.h>
 #include "block.h"
 
+#define ID_MENU_NEW_GAME 1
+#define ID_MENU_EXIT_GAME 2
+
 static bool RunningGame = true;
-static GameKey Key = None;
+static GameKeys Keys = {};
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -17,23 +20,23 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		WPARAM VKCode = wParam;
 		if (VKCode == 'S')
 		{
-			Key = Down;
+			Keys.Down = true;
 		}
-		else if (VKCode == 'A')
+		if (VKCode == 'A')
 		{
-			Key = Left;
+			Keys.Left = true;
 		}
-		else if (VKCode == 'D')
+		if (VKCode == 'D')
 		{
-			Key = Right;
+			Keys.Right = true;
 		}
-		else if (VKCode == 'J')
+		if (VKCode == 'J')
 		{
-			Key = Rotate;
+			Keys.Rotate = true;
 		}
-		else if (VKCode == VK_SPACE)
+		if (VKCode == VK_SPACE)
 		{
-			Key = Drop;
+			Keys.Drop = true;
 		}
 	} break;
 	case WM_KEYUP:
@@ -41,23 +44,23 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		WPARAM VKCode = wParam;
 		if (VKCode == 'S')
 		{
-			Key = None;
+			Keys.Down = false;
 		}
 		else if (VKCode == 'A')
 		{
-			Key = None;
+			Keys.Left = false;
 		}
 		else if (VKCode == 'D')
 		{
-			Key = None;
+			Keys.Right = false;
 		}
 		else if (VKCode == 'J')
 		{
-			Key = None;
+			Keys.Rotate = false;
 		}
 		else if (VKCode == VK_SPACE)
 		{
-			Key = None;
+			Keys.Drop = false;
 		}
 	} break;
 	case WM_CLOSE:
@@ -121,6 +124,9 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	HMENU hMenubar = CreateMenu();
 	HMENU hFileMenu = CreatePopupMenu();
 	AppendMenuW(hMenubar, MF_POPUP, (UINT_PTR)hFileMenu, L"&Menu");
+	AppendMenuW(hFileMenu, MF_STRING, ID_MENU_NEW_GAME, L"New Game");
+	AppendMenuW(hFileMenu, MF_STRING, ID_MENU_EXIT_GAME, L"Exit");
+
 	SetMenu(hWnd, hMenubar);
 
 	// Create Render Buffer
@@ -185,35 +191,53 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 
 			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN))
 			{
-				Key = Down;
+				Keys.Down = true;
 			}
+			else
+			{
+				Keys.Down = false;
+			}
+
+
 			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT))
 			{
-				Key = Left;
+				Keys.Left = true;
 			}
+			else
+			{
+				Keys.Left = false;
+			}
+
 			if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
-				Key = Right;
+				Keys.Right = true;
 			}
+			else
+			{
+				Keys.Right = false;
+			}
+
 			if ((Pad->wButtons & XINPUT_GAMEPAD_B))
 			{
-				Key = Rotate;
+				Keys.Rotate = true;
 			}
+			else
+			{
+				Keys.Rotate = false;
+			}
+
 			if ((Pad->wButtons & XINPUT_GAMEPAD_A))
 			{
-				Key = Drop;
+				Keys.Drop = true;
+			}
+			else
+			{
+				Keys.Drop = false;
 			}
 		}
 		*/
 
 		// Game Render Here
-		GameUpdate(&Graphics, &Session, Key);
-
-		if (Key == Rotate || Key == Drop) // REMOVE
-			Key = None;
-
-		if (Key == Down) // REMOVE, REPLACE WITH 1/2G
-			Key = None;
-
+		GameUpdate(&Graphics, &Session, Keys);
 
 		LARGE_INTEGER EndCounter;
 		QueryPerformanceCounter(&EndCounter);

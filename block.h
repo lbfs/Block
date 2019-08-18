@@ -28,8 +28,8 @@
 #define PreviewColumnCount 6
 
 // Delayed Auto Shift
-#define DASInitialDelayFrames 16
-#define DASMinimumFrames 6
+#define DASInitialDelayFrames 6
+#define DASMinimumFrames 4
 
 const uint16_t BlockTypes[28] = { 3840,  8738,   3840, 8738,    // I-Block 0
 								  36352, 25664,  3616, 17600,   // J-Block 4
@@ -44,7 +44,19 @@ const uint32_t GravitySpeeds[28] = {48, 43, 38, 33, 28, 23, 18, 13, 8, 6, 5, 5, 
 // When >= 29, Assume 1
 
 enum GameState { Finished = 0, Initalized = 1, Playing = 2};
-enum GameKey { None, Left, Right, Down, Rotate, Drop };
+enum GameKey { Left, Right, Down, Rotate, Drop };
+
+#define GameKeysLength 5
+union GameKeys {
+	bool Keys[GameKeysLength];
+	struct {
+		bool Left;
+		bool Right;
+		bool Down;
+		bool Rotate;
+		bool Drop;
+	};
+};
 
 struct GameBlock
 {
@@ -89,7 +101,7 @@ struct GameSession
 	uint32_t CurrentFrameCount;
 	uint32_t DropFrameCount;
 	uint32_t DasCounter;
-	GameKey PreviousKey;
+	GameKeys PreviousKeys;
 };
 
 GameBlock GetRandomBlock();
@@ -106,6 +118,6 @@ void ResetBoard(GameBoard* Board);
 bool ProcessKeyAction(GameSession* Session, GameKey Key);
 bool GameInitialize(GameGraphics* Graphics, GameSession* Session);
 void GameStart(GameGraphics* Graphics, GameSession* Session);
-void GameUpdate(GameGraphics* Graphics, GameSession* GameSession, GameKey Key);
+void GameUpdate(GameGraphics* Graphics, GameSession* GameSession, GameKeys Keys);
 
 #endif

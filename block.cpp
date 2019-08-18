@@ -424,23 +424,16 @@ GameStart(GameGraphics* Graphics, GameSession * Session)
 }
 
 void 
-GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKey Key)
+GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 {
-
-	if (Session->CurrentFrameCount % Session->DropFrameCount == 0)
+	if ((Keys.Left && !Keys.Right))
 	{
-		ProcessKeyAction(Session, Down);
-		Session->CurrentFrameCount;
-	}
-
-	if (Key == Left || Key == Right)
-	{
-		if (Session->PreviousKey != Key) // Was Left Now Right || Was Right Now Left
+		if (Session->PreviousKeys.Left != Keys.Left) // Was Left Now Right || Was Right Now Left
 		{
 			Session->DasCounter = 0;
-			ProcessKeyAction(Session, Key);
+			ProcessKeyAction(Session, Left);
 		}
-		else
+		else if (Session->PreviousKeys.Left == Keys.Left)
 		{
 			if (Session->DasCounter < DASInitialDelayFrames)
 			{
@@ -448,23 +441,60 @@ GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKey Key)
 			}
 			if (Session->DasCounter == DASInitialDelayFrames) // else?
 			{
-				if (ProcessKeyAction(Session, Key))
+				if (ProcessKeyAction(Session, Left))
 				{
 					Session->DasCounter -= DASMinimumFrames;
 				}
 			}
 		}
 	}
-	else
+	else if ((!Keys.Left && Keys.Right))
 	{
-		ProcessKeyAction(Session, Key);
+		if (Session->PreviousKeys.Right != Keys.Right) // Was Left Now Right || Was Right Now Left
+		{
+			Session->DasCounter = 0;
+			ProcessKeyAction(Session, Right);
+		}
+		else if (Session->PreviousKeys.Right == Keys.Right)
+		{
+			if (Session->DasCounter < DASInitialDelayFrames)
+			{
+				Session->DasCounter++;
+			}
+			if (Session->DasCounter == DASInitialDelayFrames) // else?
+			{
+				if (ProcessKeyAction(Session, Right))
+				{
+					Session->DasCounter -= DASMinimumFrames;
+				}
+			}
+		}
 	}
 
-	DrawBoard(Graphics, &Session->Board, false);
-	DrawBlock(Graphics, Session->CurrentBlock, &Session->Board, false);
-	DrawBoard(Graphics, &Session->PreviewBoard, true);
-	DrawBlock(Graphics, Session->NextBlock, &Session->PreviewBoard, true);
-	Session->CurrentFrameCount++;
+	if (Keys.Down)
+	{
+		ProcessKeyAction(Session, Down);
+	}
 
-	Session->PreviousKey = Key;
+	if (!Session->PreviousKeys.Rotate && Keys.Rotate)
+		ProcessKeyAction(Session, Rotate);
+
+	if (!Session->PreviousKeys.Drop && Keys.Drop)
+		ProcessKeyAction(Session, Drop);
+
+	if (Session->CurrentFrameCount % Session->DropFrameCount == 0)
+	{
+		ProcessKeyAction(Session, Down);
+	}
+
+	if (Session->CurrentFrameCount % 60)
+	{
+		DrawBoard(Graphics, &Session->Board, false);
+		DrawBlock(Graphics, Session->CurrentBlock, &Session->Board, false);
+		DrawBoard(Graphics, &Session->PreviewBoard, true);
+		DrawBlock(Graphics, Session->NextBlock, &Session->PreviewBoard, true);
+	}
+
+	Session->CurrentFrameCount++;
+	Session->PreviousKeys = Keys;
 }
