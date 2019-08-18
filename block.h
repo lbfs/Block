@@ -117,7 +117,9 @@ GameBlock DropBlock(GameSession* Session, GameBlock CopyBlock);
 void ResetBoard(GameBoard* Board);
 bool ProcessKeyAction(GameSession* Session, GameKey Key);
 bool GameInitialize(GameGraphics* Graphics, GameSession* Session);
+void GameShutdown(GameSession* Session);
 void GameStart(GameGraphics* Graphics, GameSession* Session);
 void GameUpdate(GameGraphics* Graphics, GameSession* GameSession, GameKeys Keys);
+
 
 #endif

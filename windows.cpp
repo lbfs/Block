@@ -8,6 +8,8 @@
 
 static bool RunningGame = true;
 static GameKeys Keys = {};
+static GameGraphics Graphics = {};
+static GameSession Session = {};
 
 LRESULT CALLBACK
 WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
@@ -68,6 +70,20 @@ WindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lPara
 		RunningGame = false;
 		// GameShutdown();
 	} break;
+	case WM_COMMAND:
+	{
+		switch (LOWORD(wParam))
+		{
+		case ID_MENU_EXIT_GAME:
+		{
+			RunningGame = false;
+		} break;
+		case ID_MENU_NEW_GAME:
+		{
+			GameStart(&Graphics, &Session);
+		}
+		} break;
+	} break;
 	default:
 		Result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
@@ -115,20 +131,6 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 		hInstance,
 		NULL);
 
-	// Delete the ability to resize the window.
-	HMENU hMenu = GetSystemMenu(hWnd, FALSE);
-	DeleteMenu(hMenu, SC_MAXIMIZE, MF_BYCOMMAND);
-	DeleteMenu(hMenu, SC_SIZE, MF_BYCOMMAND);
-
-	// Add menu for starting a new game, exiting the game, looking at saved scores.
-	HMENU hMenubar = CreateMenu();
-	HMENU hFileMenu = CreatePopupMenu();
-	AppendMenuW(hMenubar, MF_POPUP, (UINT_PTR)hFileMenu, L"&Menu");
-	AppendMenuW(hFileMenu, MF_STRING, ID_MENU_NEW_GAME, L"New Game");
-	AppendMenuW(hFileMenu, MF_STRING, ID_MENU_EXIT_GAME, L"Exit");
-
-	SetMenu(hWnd, hMenubar);
-
 	// Create Render Buffer
 	void* BitmapBuffer = VirtualAlloc(0, sizeof(uint32_t) * GameWindowWidth * GameWindowHeight, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (BitmapBuffer == NULL)
@@ -145,19 +147,33 @@ wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR 
 	BitmapInfo.bmiHeader.biBitCount = 32;
 	BitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-	GameGraphics Graphics = {};
+
 	Graphics.Buffer = BitmapBuffer;
 	Graphics.Width = GameWindowWidth;
 	Graphics.Height = GameWindowHeight;
 
-	GameSession Session = {};
+
 	if (!GameInitialize(&Graphics, &Session))
 	{
 		MessageBoxW(hWnd, L"Unable to initalize the game session.", L"Memory Error", MB_OK | MB_ICONWARNING);
 		return 0; //We should probably cleanup.
 	}
 
-	GameStart(&Graphics, &Session);
+	// Delete the ability to resize the window.
+	HMENU hMenu = GetSystemMenu(hWnd, FALSE);
+	DeleteMenu(hMenu, SC_MAXIMIZE, MF_BYCOMMAND);
+	DeleteMenu(hMenu, SC_SIZE, MF_BYCOMMAND);
+
+	// Add menu for starting a new game, exiting the game, looking at saved scores.
+	HMENU hMenubar = CreateMenu();
+	HMENU hFileMenu = CreatePopupMenu();
+	AppendMenuW(hMenubar, MF_POPUP, (UINT_PTR)hFileMenu, L"&Menu");
+	AppendMenuW(hFileMenu, MF_STRING, ID_MENU_NEW_GAME, L"New Game");
+	AppendMenuW(hFileMenu, MF_STRING, ID_MENU_EXIT_GAME, L"Exit");
+
+	SetMenu(hWnd, hMenubar);
+
+	// GameStart(&Graphics, &Session);
 
 	// Game Update Rate
 	float GameUpdateRateHz = 60;

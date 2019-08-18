@@ -409,14 +409,28 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	return true;
 }
 
+/* Should only be called if GameInitalized has succeeded! */
+void
+GameShutdown(GameSession* Session)
+{
+	for (int i = 0; i < PreviewRowCount; i++)
+	{
+		free(Session->PreviewBoard.Grid[i]);
+	}
+	free(Session->PreviewBoard.Grid);
+
+	for (int i = 0; i < TileRowCount; i++)
+	{
+		free(Session->Board.Grid[i]);
+	}
+	free(Session->Board.Grid);
+}
+
 void 
 GameStart(GameGraphics* Graphics, GameSession * Session)
 {
-	if (Session->State == Finished)
-	{
-		// call shutdown or free memory
-		GameInitialize(Graphics, Session);
-	}
+	GameShutdown(Session);
+	GameInitialize(Graphics, Session);
 	if (Session->State == Initalized)
 	{
 		Session->State = Playing;
@@ -426,75 +440,75 @@ GameStart(GameGraphics* Graphics, GameSession * Session)
 void 
 GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 {
-	if ((Keys.Left && !Keys.Right))
+	if (Session->State == Playing)
 	{
-		if (Session->PreviousKeys.Left != Keys.Left) // Was Left Now Right || Was Right Now Left
+		if ((Keys.Left && !Keys.Right))
 		{
-			Session->DasCounter = 0;
-			ProcessKeyAction(Session, Left);
-		}
-		else if (Session->PreviousKeys.Left == Keys.Left)
-		{
-			if (Session->DasCounter < DASInitialDelayFrames)
+			if (Session->PreviousKeys.Left != Keys.Left) // Was Left Now Right || Was Right Now Left
 			{
-				Session->DasCounter++;
+				Session->DasCounter = 0;
+				ProcessKeyAction(Session, Left);
 			}
-			if (Session->DasCounter == DASInitialDelayFrames) // else?
+			else if (Session->PreviousKeys.Left == Keys.Left)
 			{
-				if (ProcessKeyAction(Session, Left))
+				if (Session->DasCounter < DASInitialDelayFrames)
 				{
-					Session->DasCounter -= DASMinimumFrames;
+					Session->DasCounter++;
+				}
+				if (Session->DasCounter == DASInitialDelayFrames) // else?
+				{
+					if (ProcessKeyAction(Session, Left))
+					{
+						Session->DasCounter -= DASMinimumFrames;
+					}
 				}
 			}
 		}
-	}
-	else if ((!Keys.Left && Keys.Right))
-	{
-		if (Session->PreviousKeys.Right != Keys.Right) // Was Left Now Right || Was Right Now Left
+		else if ((!Keys.Left && Keys.Right))
 		{
-			Session->DasCounter = 0;
-			ProcessKeyAction(Session, Right);
-		}
-		else if (Session->PreviousKeys.Right == Keys.Right)
-		{
-			if (Session->DasCounter < DASInitialDelayFrames)
+			if (Session->PreviousKeys.Right != Keys.Right) // Was Left Now Right || Was Right Now Left
 			{
-				Session->DasCounter++;
+				Session->DasCounter = 0;
+				ProcessKeyAction(Session, Right);
 			}
-			if (Session->DasCounter == DASInitialDelayFrames) // else?
+			else if (Session->PreviousKeys.Right == Keys.Right)
 			{
-				if (ProcessKeyAction(Session, Right))
+				if (Session->DasCounter < DASInitialDelayFrames)
 				{
-					Session->DasCounter -= DASMinimumFrames;
+					Session->DasCounter++;
+				}
+				if (Session->DasCounter == DASInitialDelayFrames) // else?
+				{
+					if (ProcessKeyAction(Session, Right))
+					{
+						Session->DasCounter -= DASMinimumFrames;
+					}
 				}
 			}
 		}
-	}
 
-	if (Keys.Down)
-	{
-		ProcessKeyAction(Session, Down);
-	}
+		if (!Session->PreviousKeys.Rotate && Keys.Rotate)
+			ProcessKeyAction(Session, Rotate);
 
-	if (!Session->PreviousKeys.Rotate && Keys.Rotate)
-		ProcessKeyAction(Session, Rotate);
+		if (!Session->PreviousKeys.Drop && Keys.Drop)
+			ProcessKeyAction(Session, Drop);
 
-	if (!Session->PreviousKeys.Drop && Keys.Drop)
-		ProcessKeyAction(Session, Drop);
+		if (Session->CurrentFrameCount % Session->DropFrameCount == 0)
+		{
+			ProcessKeyAction(Session, Down);
+		}
 
-	if (Session->CurrentFrameCount % Session->DropFrameCount == 0)
-	{
-		ProcessKeyAction(Session, Down);
-	}
+		if (Keys.Down)
+		{
+			ProcessKeyAction(Session, Down);
+		}
 
-	if (Session->CurrentFrameCount % 60)
-	{
 		DrawBoard(Graphics, &Session->Board, false);
 		DrawBlock(Graphics, Session->CurrentBlock, &Session->Board, false);
 		DrawBoard(Graphics, &Session->PreviewBoard, true);
 		DrawBlock(Graphics, Session->NextBlock, &Session->PreviewBoard, true);
-	}
 
-	Session->CurrentFrameCount++;
-	Session->PreviousKeys = Keys;
+		Session->CurrentFrameCount++;
+		Session->PreviousKeys = Keys;
+	}
 }
