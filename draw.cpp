@@ -69,3 +69,83 @@ DrawBoard(GameGraphics* Graphics, GameBoard * Board, bool UseDefaultColor)
 	}
 }
 
+BitmapCharacters*
+LoadFont(const char* Filename)
+{
+	FILE* FileHandle = NULL;
+	fopen_s(&FileHandle, Filename, "rt");
+
+	if (FileHandle == NULL)
+		return NULL;
+
+	uint32_t cat = 0;
+	unsigned char c = 0;
+	bool mark = false;
+	uint32_t ElementIndex = 0;
+
+	BitmapCharacters* Characters = (BitmapCharacters*)malloc(sizeof(BitmapCharacters));
+	if (Characters == NULL)
+		return NULL;
+
+	Characters->Length = -1;
+
+	uint32_t CharacterIndex = 0;
+
+	while ((c = fgetc(FileHandle)) != EOF)
+	{
+		if (c >= '0' && c <= '9')
+		{
+			uint32_t pow = 10;
+			while ((unsigned)(c - '0') >= pow)
+				pow *= 10;
+			cat = cat * pow + (unsigned)(c - '0');
+
+			mark = true;
+		}
+		else
+		{
+			if (mark)
+			{
+				if (Characters->Length == -1)
+				{
+					Characters->Length = cat;
+					Characters->Elements = (BitmapCharacterInfo*)malloc(sizeof(BitmapCharacterInfo) * cat);
+				}
+				else
+				{
+					if (ElementIndex > 7)
+					{
+						ElementIndex = 0;
+						CharacterIndex++;
+					}
+
+					Characters->Elements[CharacterIndex].Elements[ElementIndex] = cat;
+					ElementIndex++;
+				}
+			}
+			mark = false;
+			cat = 0;
+		}
+	}
+
+	// Prevent corrupted loads.
+	if (ElementIndex > 0 && ElementIndex < 7 || CharacterIndex != (Characters->Length - 1))
+	{
+		free(Characters->Elements);
+		free(Characters);
+		fclose(FileHandle);
+		return NULL;
+	}
+
+	fclose(FileHandle);
+	return Characters;
+}
+
+void DrawWord(GameGraphics* Graphics, uint32_t StartX, uint32_t StartY)
+{
+	uint32_t* StartPixel = (uint32_t*)Graphics->Buffer;
+	StartPixel += (StartX + Graphics->Width * StartY);
+	{
+
+	}
+}

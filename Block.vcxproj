@@ -133,6 +133,12 @@
     <ClInclude Include="block.h" />
     <ClInclude Include="draw.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="SFPixelate.fnt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="SFPixelate_0.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

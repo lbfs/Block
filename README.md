@@ -12,3 +12,8 @@ A - Push Block Left
 D - Push Block Right  
 J - Rotate Block  
 SPACE - Rapid Drop Block  
+
+# Thanks
+
+Thanks to the creator of the Pixelated font for releasing it under a Freeware license. https://fontlibrary.org/en/font/pixelated
+
