@@ -379,18 +379,7 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	PreviewBoard.RenderRowOffset = 1;
 	PreviewBoard.RenderColumnOffset= 1;
 	PreviewBoard.DefaultColor = TileBackgroundColor;
-	
-	PreviewBoard.Grid = (uint32_t * *)malloc(sizeof(uint32_t*) * PreviewRowCount); // Add error checking
-	if (PreviewBoard.Grid == NULL)
-		return false;
-	for (int i = 0; i < PreviewRowCount; i++)
-	{
-		PreviewBoard.Grid[i] = (uint32_t*)malloc(sizeof(uint32_t) * PreviewColumnCount);
-		if (PreviewBoard.Grid == NULL)
-			return false;
-	}
-
-	ResetBoard(&PreviewBoard);
+	PreviewBoard.Grid = NULL;
 
 	Session->CurrentBlock = GetRandomBlock();
 	Session->NextBlock = GetRandomBlock();
@@ -440,12 +429,6 @@ GameShutdown(GameSession* Session)
 {
 	if (Session == NULL)
 		return;
-
-	for (int i = 0; i < PreviewRowCount; i++)
-	{
-		free(Session->PreviewBoard.Grid[i]);
-	}
-	free(Session->PreviewBoard.Grid);
 
 	for (int i = 0; i < TileRowCount; i++)
 	{
