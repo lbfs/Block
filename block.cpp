@@ -1,5 +1,5 @@
 #include "block.h"
-#include "draw.h"
+
 
 /* 
 A function that selects a random block from the block table with a custom rotation.
@@ -397,6 +397,8 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 
 	UpdateLevelSpeed(Session);
 
+	Session->Font = LoadFont("SFPixelate.fnt", "SFPixelate.rgb");
+
 	// Draw the board.
 	// Draw the board outline.
 	DrawCoordinateBox(Graphics, 0xFF9E351A, BoardStartPositionX - 1, BoardStartPositionY - 1, BoardStartPositionX + (TileRenderSize * TileColumnCount), BoardStartPositionY + (TileRenderSize * TileRowCount));
@@ -410,6 +412,13 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 
 	DrawBoard(Graphics, &PreviewBoard, true);
 
+	DrawWord(Graphics, Session->Font, "SCORE", 547, 60);
+	DrawWord(Graphics, Session->Font, "0000000000", 547, 92);
+	DrawWord(Graphics, Session->Font, "LEVEL", 547, 124);
+	DrawWord(Graphics, Session->Font, "0000000000", 547, 156);
+	DrawWord(Graphics, Session->Font, "LINES", 547, 188);
+	DrawWord(Graphics, Session->Font, "0000000000", 547, 220);
+
 	Session->State = Initalized;
 	return true;
 }
@@ -418,6 +427,9 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 void
 GameShutdown(GameSession* Session)
 {
+	if (Session == NULL)
+		return;
+
 	for (int i = 0; i < PreviewRowCount; i++)
 	{
 		free(Session->PreviewBoard.Grid[i]);
@@ -429,6 +441,18 @@ GameShutdown(GameSession* Session)
 		free(Session->Board.Grid[i]);
 	}
 	free(Session->Board.Grid);
+
+	if (Session->Font == NULL)
+		return;
+
+	if (Session->Font->Graphics.Buffer != NULL)
+		free(Session->Font->Graphics.Buffer);
+
+	if (Session->Font->Elements != NULL)
+		free(Session->Font->Elements);
+
+	if (Session->Font != NULL)
+		free(Session->Font);
 }
 
 void 

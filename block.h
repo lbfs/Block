@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <windows.h>
 
 #define GameWindowWidth 800
 #define GameWindowHeight 600
@@ -88,6 +91,28 @@ struct GameGraphics
 	uint32_t Height;
 };
 
+union BitmapCharacterInfo
+{
+	uint16_t Elements[8];
+	struct {
+		uint16_t Id; // ASCII Table ID (replace this)
+		uint16_t X;
+		uint16_t Y;
+		uint16_t Width;
+		uint16_t Height;
+		uint16_t XOffset;
+		uint16_t YOffset;
+		uint16_t XAdvance;
+	};
+};
+
+struct BitmapCharacters
+{
+	uint32_t Length;
+	BitmapCharacterInfo* Elements;
+	GameGraphics Graphics;
+};
+
 struct GameSession
 {
 	GameBoard Board;
@@ -101,8 +126,17 @@ struct GameSession
 	uint32_t CurrentFrameCount;
 	uint32_t DropFrameCount;
 	uint32_t DasCounter;
+	BitmapCharacters* Font;
 	GameKeys PreviousKeys;
 };
+
+void DrawCoordinateBox(GameGraphics* Graphics, uint32_t HexColor, uint32_t StartX, uint32_t StartY, uint32_t EndX, uint32_t EndY);
+void DrawBlock(GameGraphics* Graphics, GameBlock Block, GameBoard* Board, bool UseBlockCoordinates);
+void DrawBoard(GameGraphics* Graphics, GameBoard* Board, bool UseDefaultColor);
+
+BitmapCharacters* LoadFont(const char* Fontconfig, const char* Fontname);
+BitmapCharacterInfo* LookupGlyph(BitmapCharacters* Characters, const char Letter);
+void DrawWord(GameGraphics* Graphics, BitmapCharacters* Characters, const char* word, uint32_t StartX, uint32_t StartY);
 
 GameBlock GetRandomBlock();
 bool CheckBoardRow(GameBoard* Board, uint16_t Row);

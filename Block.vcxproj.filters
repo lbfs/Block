@@ -29,18 +29,13 @@
     <ClInclude Include="block.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="draw.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="SFPixelate.fnt">
       <Filter>Resource Files</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="SFPixelate_0.png">
+    <None Include="SFPixelate.rgb">
       <Filter>Resource Files</Filter>
-    </Image>
+    </None>
   </ItemGroup>
 </Project>

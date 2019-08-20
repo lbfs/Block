@@ -1,7 +1,7 @@
-#include "draw.h"
+#include "block.h"
 
 void
-DrawCoordinateBox(GameGraphics* Graphics, uint32_t HexColor, int StartX, int StartY, int EndX, int EndY)
+DrawCoordinateBox(GameGraphics* Graphics, uint32_t HexColor, uint32_t StartX, uint32_t StartY, uint32_t EndX, uint32_t EndY)
 {
 	uint32_t* Pixel = (uint32_t*)Graphics->Buffer;
 	Pixel += (StartX + Graphics->Width * StartY);
@@ -69,11 +69,12 @@ DrawBoard(GameGraphics* Graphics, GameBoard * Board, bool UseDefaultColor)
 	}
 }
 
+/* This is entire function is stupid and needs to be reworked. */
 BitmapCharacters*
-LoadFont(const char* Filename)
+LoadFont(const char* Fontconfig, const char* Fontname)
 {
 	FILE* FileHandle = NULL;
-	fopen_s(&FileHandle, Filename, "rt");
+	fopen_s(&FileHandle, Fontconfig, "rt");
 
 	if (FileHandle == NULL)
 		return NULL;
@@ -109,7 +110,7 @@ LoadFont(const char* Filename)
 				if (Characters->Length == -1)
 				{
 					Characters->Length = cat;
-					Characters->Elements = (BitmapCharacterInfo*)malloc(sizeof(BitmapCharacterInfo) * cat);
+					Characters->Elements = (BitmapCharacterInfo*)malloc(sizeof(BitmapCharacterInfo) * Characters->Length);
 				}
 				else
 				{
@@ -117,10 +118,16 @@ LoadFont(const char* Filename)
 					{
 						ElementIndex = 0;
 						CharacterIndex++;
+						if (CharacterIndex >= (Characters->Length - 1))
+						{
+							break;
+						}
 					}
-
-					Characters->Elements[CharacterIndex].Elements[ElementIndex] = cat;
-					ElementIndex++;
+					if (CharacterIndex != -1)
+					{
+						Characters->Elements[CharacterIndex].Elements[ElementIndex] = cat;
+						ElementIndex++;
+					}
 				}
 			}
 			mark = false;
@@ -128,8 +135,12 @@ LoadFont(const char* Filename)
 		}
 	}
 
-	// Prevent corrupted loads.
-	if (ElementIndex > 0 && ElementIndex < 7 || CharacterIndex != (Characters->Length - 1))
+	GameGraphics Graphics = {};
+	//@HACK
+	Graphics.Width = 256;
+	Graphics.Height = 256;
+	Graphics.Buffer = malloc(Graphics.Width * Graphics.Height * sizeof(uint32_t));
+	if (Graphics.Buffer == NULL)
 	{
 		free(Characters->Elements);
 		free(Characters);
@@ -137,15 +148,72 @@ LoadFont(const char* Filename)
 		return NULL;
 	}
 
+	FILE* BitmapFileHandle = NULL;
+	fopen_s(&BitmapFileHandle, Fontname, "rb");
+	if (BitmapFileHandle == NULL)
+	{
+		free(Characters->Elements);
+		free(Characters);
+		fclose(FileHandle);
+		return NULL;
+	}
+
+	uint32_t Pixel = 0x00000000;
+	uint32_t* PixelIterator = (uint32_t *)Graphics.Buffer;
+	while (fread(&Pixel, 1, 3, BitmapFileHandle) == 3) {
+		*PixelIterator = Pixel;
+		uint32_t garbage = *PixelIterator;
+		PixelIterator++;
+	}
+
+	Characters->Graphics = Graphics;
+	fclose(BitmapFileHandle);
 	fclose(FileHandle);
 	return Characters;
 }
 
-void DrawWord(GameGraphics* Graphics, uint32_t StartX, uint32_t StartY)
+BitmapCharacterInfo* LookupGlyph(BitmapCharacters* Characters, const char Letter)
 {
-	uint32_t* StartPixel = (uint32_t*)Graphics->Buffer;
-	StartPixel += (StartX + Graphics->Width * StartY);
+	for (uint32_t index = 0; index < Characters->Length; index++)
 	{
-
+		if (Characters->Elements[index].Id == Letter)
+		{
+			return &Characters->Elements[index];
+		}
 	}
+	return NULL;
+}
+
+void DrawWord(GameGraphics* Graphics, BitmapCharacters* Characters, const char * word, uint32_t StartX, uint32_t StartY)
+{
+
+	uint32_t* Pixel = (uint32_t*)Graphics->Buffer;
+	Pixel += (StartX + Graphics->Width * StartY);
+	for (uint32_t index = 0; index < strlen(word); index++)
+	{
+		BitmapCharacterInfo* Glyph = LookupGlyph(Characters, word[index]);
+		if (Glyph == NULL)
+		{
+			continue;
+		}
+
+		uint32_t* StartingBitmapPixel = ((uint32_t*)Characters->Graphics.Buffer) + Characters->Graphics.Width * Glyph->Y + Glyph->X;
+		uint32_t* StartPixel = (uint32_t*)Pixel;
+		for (int Y = 0; Y < Glyph->Height; Y++)
+		{
+			for (int X = 0; X < Glyph->Width; X++)
+			{
+				uint32_t BitmapPixel = *(StartingBitmapPixel + X + (Y * Characters->Graphics.Width));
+				if (BitmapPixel != 0x00000000)
+				{
+					*StartPixel = BitmapPixel;
+				}
+				StartPixel++;
+			}
+			StartPixel += Graphics->Width - Glyph->Width;
+		}
+		Pixel += Glyph->XAdvance;
+	}
+
+
 }
