@@ -250,7 +250,7 @@ UpdateLevelSpeed(GameSession* Session)
 }
 
 bool 
-ProcessKeyAction(GameSession * Session, GameKey Key)
+ProcessKeyAction(GameGraphics * Graphics, GameSession * Session, GameKey Key)
 {
 	GameBlock CopyBlock;
 	switch (Key)
@@ -290,6 +290,15 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 		UpdateScore(Session, LinesCleared);
 		Session->LinesCleared += LinesCleared;
 
+		if (LinesCleared)
+		{
+			DrawCoordinateBox(Graphics, 0xFF121212, 547, 92, 795, 120);
+			DrawNumber(Graphics, Session->Font, Session->Score, 547, 92);
+
+			DrawCoordinateBox(Graphics, 0xFF121212, 547, 220, 795, 248);
+			DrawNumber(Graphics, Session->Font, Session->LinesCleared, 547, 220);
+		}
+
 		// Update Level
 		if (LinesCleared)
 		{
@@ -297,6 +306,8 @@ ProcessKeyAction(GameSession * Session, GameKey Key)
 			{
 				Session->Level++;
 				UpdateLevelSpeed(Session);
+				DrawCoordinateBox(Graphics, 0xFF121212, 547, 156, 795, 184);
+				DrawNumber(Graphics, Session->Font, Session->Level, 547, 156);
 			}
 		}
 
@@ -398,6 +409,9 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	UpdateLevelSpeed(Session);
 
 	Session->Font = LoadFont("SFPixelate.fnt", "SFPixelate.rgb");
+	DrawNumber(Graphics, Session->Font, Session->Score, 547, 92);
+	DrawNumber(Graphics, Session->Font, Session->LinesCleared, 547, 220);
+	DrawNumber(Graphics, Session->Font, Session->Level, 547, 156);
 
 	// Draw the board.
 	// Draw the board outline.
@@ -413,11 +427,8 @@ GameInitialize(GameGraphics * Graphics, GameSession* Session)
 	DrawBoard(Graphics, &PreviewBoard, true);
 
 	DrawWord(Graphics, Session->Font, "SCORE", 547, 60);
-	DrawWord(Graphics, Session->Font, "0000000000", 547, 92);
 	DrawWord(Graphics, Session->Font, "LEVEL", 547, 124);
-	DrawWord(Graphics, Session->Font, "0000000000", 547, 156);
 	DrawWord(Graphics, Session->Font, "LINES", 547, 188);
-	DrawWord(Graphics, Session->Font, "0000000000", 547, 220);
 
 	Session->State = Initalized;
 	return true;
@@ -476,7 +487,7 @@ GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 			if (Session->PreviousKeys.Left != Keys.Left) // Was Left Now Right || Was Right Now Left
 			{
 				Session->DasCounter = 0;
-				ProcessKeyAction(Session, Left);
+				ProcessKeyAction(Graphics, Session, Left);
 			}
 			else if (Session->PreviousKeys.Left == Keys.Left)
 			{
@@ -486,7 +497,7 @@ GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 				}
 				if (Session->DasCounter == DASInitialDelayFrames) // else?
 				{
-					if (ProcessKeyAction(Session, Left))
+					if (ProcessKeyAction(Graphics, Session, Left))
 					{
 						Session->DasCounter -= DASMinimumFrames;
 					}
@@ -498,7 +509,7 @@ GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 			if (Session->PreviousKeys.Right != Keys.Right) // Was Left Now Right || Was Right Now Left
 			{
 				Session->DasCounter = 0;
-				ProcessKeyAction(Session, Right);
+				ProcessKeyAction(Graphics, Session, Right);
 			}
 			else if (Session->PreviousKeys.Right == Keys.Right)
 			{
@@ -508,7 +519,7 @@ GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 				}
 				if (Session->DasCounter == DASInitialDelayFrames) // else?
 				{
-					if (ProcessKeyAction(Session, Right))
+					if (ProcessKeyAction(Graphics, Session, Right))
 					{
 						Session->DasCounter -= DASMinimumFrames;
 					}
@@ -517,19 +528,19 @@ GameUpdate(GameGraphics* Graphics, GameSession* Session, GameKeys Keys)
 		}
 
 		if (!Session->PreviousKeys.Rotate && Keys.Rotate)
-			ProcessKeyAction(Session, Rotate);
+			ProcessKeyAction(Graphics, Session, Rotate);
 
 		if (!Session->PreviousKeys.Drop && Keys.Drop)
-			ProcessKeyAction(Session, Drop);
+			ProcessKeyAction(Graphics, Session, Drop);
 
 		if (Session->CurrentFrameCount % Session->DropFrameCount == 0)
 		{
-			ProcessKeyAction(Session, Down);
+			ProcessKeyAction(Graphics, Session, Down);
 		}
 
 		if (Keys.Down)
 		{
-			ProcessKeyAction(Session, Down);
+			ProcessKeyAction(Graphics, Session, Down);
 		}
 
 		DrawBoard(Graphics, &Session->Board, false);

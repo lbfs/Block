@@ -2,11 +2,10 @@
 #define BLOCK_H
 
 #include <stdint.h>
-#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <windows.h>
+#include <time.h>
 
 #define GameWindowWidth 800
 #define GameWindowHeight 600
@@ -136,7 +135,9 @@ void DrawBoard(GameGraphics* Graphics, GameBoard* Board, bool UseDefaultColor);
 
 BitmapCharacters* LoadFont(const char* Fontconfig, const char* Fontname);
 BitmapCharacterInfo* LookupGlyph(BitmapCharacters* Characters, const char Letter);
-void DrawWord(GameGraphics* Graphics, BitmapCharacters* Characters, const char* word, uint32_t StartX, uint32_t StartY);
+uint32_t* DrawGlyph(GameGraphics* Graphics, BitmapCharacters* Characters, uint32_t* Pixel, char Letter);
+void DrawWord(GameGraphics* Graphics, BitmapCharacters* Characters, const char* Word, uint32_t StartX, uint32_t StartY);
+void DrawNumber(GameGraphics* Graphics, BitmapCharacters* Characters, uint32_t Number, uint32_t StartX, uint32_t StartY);
 
 GameBlock GetRandomBlock();
 bool CheckBoardRow(GameBoard* Board, uint16_t Row);
@@ -149,7 +150,7 @@ GameBlock RotateBlock(GameBlock CopyBlock);
 GameBlock MoveBlock(GameBlock CopyBlock, int16_t X, int16_t Y);
 GameBlock DropBlock(GameSession* Session, GameBlock CopyBlock);
 void ResetBoard(GameBoard* Board);
-bool ProcessKeyAction(GameSession* Session, GameKey Key);
+bool ProcessKeyAction(GameGraphics * Graphics, GameSession* Session, GameKey Key);
 bool GameInitialize(GameGraphics* Graphics, GameSession* Session);
 void GameShutdown(GameSession* Session);
 void GameStart(GameGraphics* Graphics, GameSession* Session);

@@ -184,6 +184,33 @@ BitmapCharacterInfo* LookupGlyph(BitmapCharacters* Characters, const char Letter
 	return NULL;
 }
 
+uint32_t * DrawGlyph(GameGraphics* Graphics, BitmapCharacters* Characters, uint32_t* Pixel, char Letter)
+{
+	BitmapCharacterInfo* Glyph = LookupGlyph(Characters, Letter);
+	if (Glyph == NULL)
+	{
+		return Pixel;
+	}
+
+	uint32_t* StartingBitmapPixel = ((uint32_t*)Characters->Graphics.Buffer) + Characters->Graphics.Width * Glyph->Y + Glyph->X;
+	uint32_t* StartPixel = (uint32_t*)Pixel;
+	for (int Y = 0; Y < Glyph->Height; Y++)
+	{
+		for (int X = 0; X < Glyph->Width; X++)
+		{
+			uint32_t BitmapPixel = *(StartingBitmapPixel + X + (Y * Characters->Graphics.Width));
+			if (BitmapPixel != 0x00000000)
+			{
+				*StartPixel = BitmapPixel;
+			}
+			StartPixel++;
+		}
+		StartPixel += Graphics->Width - Glyph->Width;
+	}
+	Pixel += Glyph->XAdvance;
+	return Pixel;
+}
+
 void DrawWord(GameGraphics* Graphics, BitmapCharacters* Characters, const char * word, uint32_t StartX, uint32_t StartY)
 {
 
@@ -191,29 +218,23 @@ void DrawWord(GameGraphics* Graphics, BitmapCharacters* Characters, const char *
 	Pixel += (StartX + Graphics->Width * StartY);
 	for (uint32_t index = 0; index < strlen(word); index++)
 	{
-		BitmapCharacterInfo* Glyph = LookupGlyph(Characters, word[index]);
-		if (Glyph == NULL)
-		{
-			continue;
-		}
-
-		uint32_t* StartingBitmapPixel = ((uint32_t*)Characters->Graphics.Buffer) + Characters->Graphics.Width * Glyph->Y + Glyph->X;
-		uint32_t* StartPixel = (uint32_t*)Pixel;
-		for (int Y = 0; Y < Glyph->Height; Y++)
-		{
-			for (int X = 0; X < Glyph->Width; X++)
-			{
-				uint32_t BitmapPixel = *(StartingBitmapPixel + X + (Y * Characters->Graphics.Width));
-				if (BitmapPixel != 0x00000000)
-				{
-					*StartPixel = BitmapPixel;
-				}
-				StartPixel++;
-			}
-			StartPixel += Graphics->Width - Glyph->Width;
-		}
-		Pixel += Glyph->XAdvance;
+		Pixel = DrawGlyph(Graphics, Characters, Pixel, word[index]);
 	}
 
+}
 
+void DrawNumber(GameGraphics* Graphics, BitmapCharacters* Characters, uint32_t Number, uint32_t StartX, uint32_t StartY)
+{
+	uint32_t* Pixel = (uint32_t*)Graphics->Buffer;
+	Pixel += (StartX + Graphics->Width * StartY);
+
+	if (Number == 0)
+	{
+		DrawGlyph(Graphics, Characters, Pixel, 48);
+		return;
+	}
+
+	char NumberBuffer[32] = {};
+	snprintf(NumberBuffer, sizeof(NumberBuffer), "%lu", Number);
+	DrawWord(Graphics, Characters, NumberBuffer, StartX, StartY);
 }
