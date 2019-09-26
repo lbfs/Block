@@ -3,9 +3,6 @@ A game in which rotatable pieces fall down a board.
 
 ![Screenshot](./screenshot.png)
 
-# Note
-This program is currently buggy, I've made this to rebuild familiary with C/C++ Programming and to learn the Win32 API. 
-
 # Controls
 S - Push Block Down  
 A - Push Block Left  
